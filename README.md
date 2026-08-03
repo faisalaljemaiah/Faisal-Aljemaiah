@@ -20,16 +20,18 @@ leaderboard, and a full admin panel — built for hospital pharmacy teams.
 
 - **Auth**: login, register, forgot/reset password, profile editing, change password
 - **Dashboard**: upcoming shifts, today's activities, Drug of the Day, weekly leaderboard, announcements, quick actions
-- **Schedule**: calendar view, shift assignments, rotations, attendance check-in/out
+- **Schedule**: intern calendar view, attendance check-in/out, rotations — plus an admin **Assign Shifts** grid (split-screen intern picker + 4-week Mon–Sun Morning/Evening/Night grid, stage-then-save workflow, consecutive-day fairness warning)
 - **Drug of the Day**: admin-published clinical spotlight with a scored quiz (server-side grading via Postgres RPC)
-- **Drug Locator**: fast fuzzy search by generic/brand name with shelf/bin/room storage info
-- **Counseling Simulator**: virtual patient cases with a counseling checklist, server-graded score and feedback
+- **Drug Locator**: fast fuzzy search by generic/brand name with shelf/bin/room storage info, medication categories (filterable), photos, and bulk CSV/XLSX import
+- **Counseling Simulator**: virtual patient cases with a counseling checklist and optional MCQ knowledge check, both server-graded and blended into one score; bulk CSV/XLSX case import
 - **Reflections**: draft/submit clinical learning logs with preceptor/admin review
 - **Leaderboard**: weekly / monthly / all-time rankings, badges auto-awarded by point thresholds
-- **Admin Panel**: manage users & roles, schedules & rotations, Drug of the Day, drug directory, counseling cases, announcements, reflection review, analytics dashboard
+- **Admin Panel**: manage users & roles (including inviting new accounts by email and full profile editing), schedules & rotations, Drug of the Day, drug directory, counseling cases, announcements, reflection review, analytics dashboard
 
 Every feature reads and writes through Supabase with Row Level Security — there
-is no mock data or fake API layer.
+is no mock data or fake API layer. AI-assisted grading and AI-generated
+scenarios were intentionally left out of this build (they require wiring up
+a paid LLM API key) — ask if you'd like those added later.
 
 ## Getting started
 
@@ -37,7 +39,7 @@ is no mock data or fake API layer.
 
 Create a project at [supabase.com](https://supabase.com/dashboard), then open
 the SQL Editor and run the migration files in `supabase/migrations/` **in
-order** (0001 → 0005). If you use the [Supabase CLI](https://supabase.com/docs/guides/cli)
+order** (0001 → 0007). If you use the [Supabase CLI](https://supabase.com/docs/guides/cli)
 instead:
 
 ```bash
@@ -46,9 +48,15 @@ supabase db push
 ```
 
 This creates every table, index, trigger, RPC function, view, and RLS policy
-described below. All five migrations have been validated end-to-end against a
+described below. All migrations have been validated end-to-end against a
 real PostgreSQL 16 instance (schema creation, triggers, RLS enforcement, and
 the scoring RPCs all verified).
+
+You'll also need to deploy one Edge Function (`supabase/functions/admin-manage-user`)
+via Supabase Dashboard → Edge Functions, so admins can invite/remove users
+directly from the app — see the code comment at the top of that file for
+what it does. No extra secrets need configuring; Supabase injects them
+automatically.
 
 ### 2. Configure environment variables
 
@@ -86,6 +94,8 @@ All schema lives in `supabase/migrations/`, split for readability:
 - `0003_functions_triggers.sql` — `handle_new_user` (auth.users → profiles), `updated_at` maintenance, points-ledger → profile points sync, automatic badge awarding, server-side quiz/counseling scoring RPCs (`submit_drug_of_day_quiz`, `submit_counseling_attempt`), notification triggers, and leaderboard views
 - `0004_rls.sql` — Row Level Security enabled and policies defined for every table (role-aware: intern/preceptor/admin)
 - `0005_seed_badges.sql` — reference data for the badge system (no fake user/clinical data)
+- `0006_drug_categories_and_images.sql` — `medication_category` enum, `drugs.category`/`drugs.image_urls`, and a `medication-images` Storage bucket with RLS
+- `0007_counseling_mcq_and_bulk_import.sql` — `counseling_case_questions` table and an updated `submit_counseling_attempt` that blends checklist + MCQ scoring
 
 Quiz and counseling-simulator scoring happens **inside Postgres** via
 `security definer` RPC functions so scores and point awards can't be
