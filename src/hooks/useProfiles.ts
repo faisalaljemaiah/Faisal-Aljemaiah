@@ -64,6 +64,45 @@ export function useToggleUserActive() {
   })
 }
 
+export interface CreateInternInput {
+  email: string
+  full_name: string
+  role?: UserRole
+  school?: string
+  cohort?: string
+  year_level?: string
+  phone?: string
+}
+
+export function useCreateIntern() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: CreateInternInput) => {
+      const { data, error } = await supabase.functions.invoke('admin-manage-user', {
+        body: { action: 'create', ...input },
+      })
+      if (error) throw error
+      if (data?.error) throw new Error(data.error)
+      return data as { user_id: string }
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['profiles'] }),
+  })
+}
+
+export function useDeleteUser() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (user_id: string) => {
+      const { data, error } = await supabase.functions.invoke('admin-manage-user', {
+        body: { action: 'delete', user_id },
+      })
+      if (error) throw error
+      if (data?.error) throw new Error(data.error)
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['profiles'] }),
+  })
+}
+
 export function useAdjustPoints() {
   const queryClient = useQueryClient()
   return useMutation({

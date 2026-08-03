@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { toast } from 'sonner'
+import { Loader2, Plus, Trash2, Pencil } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
 import { Card, CardContent } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -14,23 +15,62 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-import { useAllProfiles, useAdjustPoints, useToggleUserActive, useUpdateUserRole } from '@/hooks/useProfiles'
+import {
+  useAllProfiles,
+  useAdjustPoints,
+  useToggleUserActive,
+  useUpdateUserRole,
+  useUpdateProfile,
+  useCreateIntern,
+  useDeleteUser,
+  type CreateInternInput,
+} from '@/hooks/useProfiles'
 import { getInitials } from '@/lib/utils'
 import type { Profile, UserRole } from '@/types/database'
+
+const emptyCreateForm: CreateInternInput = {
+  email: '',
+  full_name: '',
+  role: 'intern',
+  school: '',
+  cohort: '',
+  year_level: '',
+  phone: '',
+}
+
+const emptyEditForm = {
+  full_name: '',
+  phone: '',
+  school: '',
+  cohort: '',
+  year_level: '',
+}
 
 export default function AdminInternsPage() {
   const { data: profiles, isLoading } = useAllProfiles()
   const updateRole = useUpdateUserRole()
   const toggleActive = useToggleUserActive()
   const adjustPoints = useAdjustPoints()
+  const updateProfile = useUpdateProfile()
+  const createIntern = useCreateIntern()
+  const deleteUser = useDeleteUser()
 
   const [search, setSearch] = React.useState('')
   const [pointsTarget, setPointsTarget] = React.useState<Profile | null>(null)
   const [pointsValue, setPointsValue] = React.useState('0')
   const [pointsReason, setPointsReason] = React.useState('')
+
+  const [addOpen, setAddOpen] = React.useState(false)
+  const [createForm, setCreateForm] = React.useState<CreateInternInput>(emptyCreateForm)
+
+  const [editTarget, setEditTarget] = React.useState<Profile | null>(null)
+  const [editForm, setEditForm] = React.useState(emptyEditForm)
+
+  const [deleteTarget, setDeleteTarget] = React.useState<Profile | null>(null)
 
   const filtered = (profiles ?? []).filter(
     (p) => p.full_name.toLowerCase().includes(search.toLowerCase()) || p.email.toLowerCase().includes(search.toLowerCase())
@@ -72,9 +112,69 @@ export default function AdminInternsPage() {
     }
   }
 
+  async function handleCreateIntern() {
+    if (!createForm.email.trim() || !createForm.full_name.trim()) {
+      toast.error('Name and email are required.')
+      return
+    }
+    try {
+      await createIntern.mutateAsync(createForm)
+      toast.success('Invite sent!', { description: `${createForm.full_name} will receive an email to set their password.` })
+      setAddOpen(false)
+      setCreateForm(emptyCreateForm)
+    } catch (e) {
+      toast.error('Could not create user', { description: (e as Error).message })
+    }
+  }
+
+  function openEdit(p: Profile) {
+    setEditTarget(p)
+    setEditForm({
+      full_name: p.full_name,
+      phone: p.phone ?? '',
+      school: p.school ?? '',
+      cohort: p.cohort ?? '',
+      year_level: p.year_level ?? '',
+    })
+  }
+
+  async function handleSaveEdit() {
+    if (!editTarget) return
+    if (!editForm.full_name.trim()) {
+      toast.error('Name is required.')
+      return
+    }
+    try {
+      await updateProfile.mutateAsync({ id: editTarget.id, ...editForm })
+      toast.success('Profile updated')
+      setEditTarget(null)
+    } catch (e) {
+      toast.error('Could not update profile', { description: (e as Error).message })
+    }
+  }
+
+  async function handleDelete() {
+    if (!deleteTarget) return
+    try {
+      await deleteUser.mutateAsync(deleteTarget.id)
+      toast.success('User removed')
+      setDeleteTarget(null)
+    } catch (e) {
+      toast.error('Could not remove user', { description: (e as Error).message })
+    }
+  }
+
   return (
     <div>
-      <PageHeader title="Manage Users" description="Interns, preceptors, and administrators on the platform." />
+      <PageHeader
+        title="Manage Users"
+        description="Interns, preceptors, and administrators on the platform."
+        actions={
+          <Button onClick={() => setAddOpen(true)}>
+            <Plus className="h-4 w-4" /> Add intern
+          </Button>
+        }
+      />
 
       <Input
         placeholder="Search by name or email..."
@@ -139,9 +239,15 @@ export default function AdminInternsPage() {
                     <TableCell>
                       <Badge variant={p.is_active ? 'success' : 'secondary'}>{p.is_active ? 'Active' : 'Inactive'}</Badge>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right space-x-1">
                       <Button variant="outline" size="sm" onClick={() => handleToggleActive(p)}>
                         {p.is_active ? 'Deactivate' : 'Activate'}
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(p)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setDeleteTarget(p)}>
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -152,6 +258,7 @@ export default function AdminInternsPage() {
         </CardContent>
       </Card>
 
+      {/* Adjust points */}
       <Dialog open={!!pointsTarget} onOpenChange={(open) => !open && setPointsTarget(null)}>
         <DialogContent>
           <DialogHeader>
@@ -170,6 +277,123 @@ export default function AdminInternsPage() {
           <DialogFooter>
             <Button onClick={handleAdjustPoints} disabled={adjustPoints.isPending}>
               Apply
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add intern */}
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add a new user</DialogTitle>
+            <DialogDescription>
+              They'll receive an email invite to set their own password and sign in.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Full name</Label>
+                <Input value={createForm.full_name} onChange={(e) => setCreateForm({ ...createForm, full_name: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>Email</Label>
+                <Input type="email" value={createForm.email} onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>Role</Label>
+                <Select value={createForm.role} onValueChange={(v) => setCreateForm({ ...createForm, role: v as UserRole })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="intern">Intern</SelectItem>
+                    <SelectItem value="preceptor">Preceptor</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Phone (optional)</Label>
+                <Input value={createForm.phone} onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>School (optional)</Label>
+                <Input value={createForm.school} onChange={(e) => setCreateForm({ ...createForm, school: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>Cohort (optional)</Label>
+                <Input value={createForm.cohort} onChange={(e) => setCreateForm({ ...createForm, cohort: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>Year level (optional)</Label>
+                <Input value={createForm.year_level} onChange={(e) => setCreateForm({ ...createForm, year_level: e.target.value })} />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleCreateIntern} disabled={createIntern.isPending}>
+              {createIntern.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              Send invite
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit profile */}
+      <Dialog open={!!editTarget} onOpenChange={(open) => !open && setEditTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit {editTarget?.full_name}</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-2 sm:col-span-2">
+              <Label>Full name</Label>
+              <Input value={editForm.full_name} onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Phone</Label>
+              <Input value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>School</Label>
+              <Input value={editForm.school} onChange={(e) => setEditForm({ ...editForm, school: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Cohort</Label>
+              <Input value={editForm.cohort} onChange={(e) => setEditForm({ ...editForm, cohort: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Year level</Label>
+              <Input value={editForm.year_level} onChange={(e) => setEditForm({ ...editForm, year_level: e.target.value })} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleSaveEdit} disabled={updateProfile.isPending}>
+              Save changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation */}
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove {deleteTarget?.full_name}?</DialogTitle>
+            <DialogDescription>
+              This permanently deletes their account and all associated data (shifts, reflections, reflections
+              history, counseling attempts, points). This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={deleteUser.isPending}>
+              {deleteUser.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              Delete permanently
             </Button>
           </DialogFooter>
         </DialogContent>
