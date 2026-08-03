@@ -110,11 +110,29 @@ export interface AppNotification {
   created_at: string
 }
 
+export type MedicationCategory =
+  | 'cardiology'
+  | 'oncology'
+  | 'cns'
+  | 'gastrointestinal'
+  | 'endocrine'
+  | 'infectious_diseases'
+  | 'otc'
+  | 'emergency'
+  | 'antibiotics'
+  | 'pediatrics'
+  | 'respiratory'
+  | 'renal'
+  | 'hematology'
+  | 'psychiatry'
+  | 'other'
+
 export interface Drug {
   id: string
   generic_name: string
   brand_names: string[]
   drug_class: string | null
+  category: MedicationCategory | null
   dosage_form: string | null
   strength: string | null
   storage_room: string
@@ -123,6 +141,7 @@ export interface Drug {
   is_controlled: boolean
   is_refrigerated: boolean
   is_high_alert: boolean
+  image_urls: string[]
   notes: string | null
   created_by: string | null
   created_at: string

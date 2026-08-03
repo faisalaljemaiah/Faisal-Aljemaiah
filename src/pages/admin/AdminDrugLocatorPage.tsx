@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { toast } from 'sonner'
-import { Plus, Trash2, Pencil } from 'lucide-react'
+import { Plus, Trash2, Pencil, Upload, X, Loader2, FileSpreadsheet, Download } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -8,23 +8,39 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
+  DialogTrigger,
 } from '@/components/ui/dialog'
 import { useAuth } from '@/contexts/AuthContext'
-import { useCreateDrug, useDeleteDrug, useDrugSearch, useUpdateDrug } from '@/hooks/useDrugs'
-import type { Drug } from '@/types/database'
+import {
+  useCreateDrug,
+  useDeleteDrug,
+  useDrugSearch,
+  useUpdateDrug,
+  useBulkImportDrugs,
+  useUploadDrugImage,
+  useRemoveDrugImage,
+  type DrugImportRow,
+} from '@/hooks/useDrugs'
+import { parseSpreadsheetFile, parseBoolean, downloadCsvTemplate, type ParsedRow } from '@/lib/bulkImport'
+import { MEDICATION_CATEGORIES, categoryLabel } from '@/lib/constants'
+import type { Drug, MedicationCategory } from '@/types/database'
 
 const emptyForm = {
   generic_name: '',
   brand_names: '',
   drug_class: '',
+  category: '' as MedicationCategory | '',
   dosage_form: '',
   strength: '',
   storage_room: '',
@@ -36,16 +52,35 @@ const emptyForm = {
   notes: '',
 }
 
+const IMPORT_HEADERS = [
+  'generic_name',
+  'brand_names',
+  'drug_class',
+  'category',
+  'dosage_form',
+  'strength',
+  'storage_room',
+  'storage_shelf',
+  'storage_bin',
+  'is_controlled',
+  'is_refrigerated',
+  'is_high_alert',
+  'notes',
+]
+
 export default function AdminDrugLocatorPage() {
   const { profile } = useAuth()
   const { data: drugs, isLoading } = useDrugSearch('')
   const createDrug = useCreateDrug()
   const updateDrug = useUpdateDrug()
   const deleteDrug = useDeleteDrug()
+  const uploadImage = useUploadDrugImage()
+  const removeImage = useRemoveDrugImage()
 
   const [open, setOpen] = React.useState(false)
   const [editing, setEditing] = React.useState<Drug | null>(null)
   const [form, setForm] = React.useState(emptyForm)
+  const [uploadingImage, setUploadingImage] = React.useState(false)
 
   function openNew() {
     setEditing(null)
@@ -59,6 +94,7 @@ export default function AdminDrugLocatorPage() {
       generic_name: d.generic_name,
       brand_names: d.brand_names.join(', '),
       drug_class: d.drug_class ?? '',
+      category: d.category ?? '',
       dosage_form: d.dosage_form ?? '',
       strength: d.strength ?? '',
       storage_room: d.storage_room,
@@ -85,6 +121,7 @@ export default function AdminDrugLocatorPage() {
         .map((b) => b.trim())
         .filter(Boolean),
       drug_class: form.drug_class || null,
+      category: form.category || null,
       dosage_form: form.dosage_form || null,
       strength: form.strength || null,
       storage_room: form.storage_room,
@@ -100,7 +137,7 @@ export default function AdminDrugLocatorPage() {
         await updateDrug.mutateAsync({ id: editing.id, ...payload })
         toast.success('Medication updated')
       } else {
-        await createDrug.mutateAsync({ ...payload, created_by: profile.id })
+        await createDrug.mutateAsync({ ...payload, image_urls: [], created_by: profile.id })
         toast.success('Medication added')
       }
       setOpen(false)
@@ -118,15 +155,51 @@ export default function AdminDrugLocatorPage() {
     }
   }
 
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    if (!editing || !e.target.files || e.target.files.length === 0) return
+    setUploadingImage(true)
+    try {
+      const urls: string[] = []
+      for (const file of Array.from(e.target.files)) {
+        const url = await uploadImage.mutateAsync({ drugId: editing.id, file })
+        urls.push(url)
+      }
+      const nextUrls = [...editing.image_urls, ...urls]
+      await updateDrug.mutateAsync({ id: editing.id, image_urls: nextUrls })
+      setEditing({ ...editing, image_urls: nextUrls })
+      toast.success('Image uploaded')
+    } catch (err) {
+      toast.error('Could not upload image', { description: (err as Error).message })
+    } finally {
+      setUploadingImage(false)
+      e.target.value = ''
+    }
+  }
+
+  async function handleRemoveImage(url: string) {
+    if (!editing) return
+    const remaining = editing.image_urls.filter((u) => u !== url)
+    try {
+      await removeImage.mutateAsync({ drugId: editing.id, url, remainingUrls: remaining })
+      setEditing({ ...editing, image_urls: remaining })
+      toast.success('Image removed')
+    } catch (err) {
+      toast.error('Could not remove image', { description: (err as Error).message })
+    }
+  }
+
   return (
     <div>
       <PageHeader
         title="Drug Locator"
         description="Manage the medication storage directory."
         actions={
-          <Button onClick={openNew}>
-            <Plus className="h-4 w-4" /> Add medication
-          </Button>
+          <div className="flex gap-2">
+            <BulkImportDialog />
+            <Button onClick={openNew}>
+              <Plus className="h-4 w-4" /> Add medication
+            </Button>
+          </div>
         }
       />
 
@@ -139,6 +212,7 @@ export default function AdminDrugLocatorPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Generic name</TableHead>
+                  <TableHead>Category</TableHead>
                   <TableHead>Brands</TableHead>
                   <TableHead>Location</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -147,7 +221,17 @@ export default function AdminDrugLocatorPage() {
               <TableBody>
                 {(drugs ?? []).map((d) => (
                   <TableRow key={d.id}>
-                    <TableCell className="font-medium capitalize">{d.generic_name}</TableCell>
+                    <TableCell className="font-medium capitalize">
+                      <div className="flex items-center gap-2">
+                        {d.image_urls[0] && (
+                          <img src={d.image_urls[0]} alt="" className="h-8 w-8 rounded object-cover" />
+                        )}
+                        {d.generic_name}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {d.category ? <Badge variant="secondary">{categoryLabel(d.category)}</Badge> : '—'}
+                    </TableCell>
                     <TableCell>{d.brand_names.join(', ') || '—'}</TableCell>
                     <TableCell>
                       {d.storage_room}
@@ -190,6 +274,21 @@ export default function AdminDrugLocatorPage() {
                 <Input value={form.drug_class} onChange={(e) => setForm({ ...form, drug_class: e.target.value })} />
               </div>
               <div className="space-y-2">
+                <Label>Category</Label>
+                <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v as MedicationCategory })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MEDICATION_CATEGORIES.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>
+                        {c.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
                 <Label>Dosage form</Label>
                 <Input value={form.dosage_form} onChange={(e) => setForm({ ...form, dosage_form: e.target.value })} />
               </div>
@@ -228,6 +327,30 @@ export default function AdminDrugLocatorPage() {
               <Label>Notes</Label>
               <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
             </div>
+
+            {editing && (
+              <div className="space-y-2">
+                <Label>Images</Label>
+                <div className="flex flex-wrap gap-2">
+                  {editing.image_urls.map((url) => (
+                    <div key={url} className="relative">
+                      <img src={url} alt="" className="h-16 w-16 rounded-lg border object-cover" />
+                      <button
+                        onClick={() => handleRemoveImage(url)}
+                        className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                  <label className="flex h-16 w-16 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed text-muted-foreground hover:bg-accent">
+                    {uploadingImage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                    <span className="text-[10px]">Upload</span>
+                    <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} disabled={uploadingImage} />
+                  </label>
+                </div>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button onClick={handleSave} disabled={createDrug.isPending || updateDrug.isPending}>
@@ -237,5 +360,167 @@ export default function AdminDrugLocatorPage() {
         </DialogContent>
       </Dialog>
     </div>
+  )
+}
+
+function BulkImportDialog() {
+  const { profile } = useAuth()
+  const bulkImport = useBulkImportDrugs()
+  const [open, setOpen] = React.useState(false)
+  const [rows, setRows] = React.useState<DrugImportRow[] | null>(null)
+  const [fileName, setFileName] = React.useState('')
+  const [parseError, setParseError] = React.useState<string | null>(null)
+
+  function mapRow(row: ParsedRow): DrugImportRow | null {
+    if (!row.generic_name || !row.storage_room) return null
+    const category = MEDICATION_CATEGORIES.find((c) => c.value === row.category?.toLowerCase().trim())?.value
+    return {
+      generic_name: row.generic_name.trim(),
+      brand_names: (row.brand_names ?? '')
+        .split(/[,;]/)
+        .map((b) => b.trim())
+        .filter(Boolean),
+      drug_class: row.drug_class?.trim() || null,
+      category: category ?? null,
+      dosage_form: row.dosage_form?.trim() || null,
+      strength: row.strength?.trim() || null,
+      storage_room: row.storage_room.trim(),
+      storage_shelf: row.storage_shelf?.trim() || null,
+      storage_bin: row.storage_bin?.trim() || null,
+      is_controlled: parseBoolean(row.is_controlled),
+      is_refrigerated: parseBoolean(row.is_refrigerated),
+      is_high_alert: parseBoolean(row.is_high_alert),
+      notes: row.notes?.trim() || null,
+    }
+  }
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setFileName(file.name)
+    setParseError(null)
+    setRows(null)
+    try {
+      const parsed = await parseSpreadsheetFile(file)
+      const mapped = parsed.map(mapRow).filter((r): r is DrugImportRow => r !== null)
+      if (mapped.length === 0) {
+        setParseError('No valid rows found. Make sure "generic_name" and "storage_room" columns are filled in.')
+        return
+      }
+      setRows(mapped)
+    } catch (err) {
+      setParseError((err as Error).message)
+    } finally {
+      e.target.value = ''
+    }
+  }
+
+  async function handleImport() {
+    if (!profile || !rows) return
+    try {
+      const count = await bulkImport.mutateAsync({ rows, created_by: profile.id })
+      toast.success(`Imported ${count} medications`)
+      setOpen(false)
+      setRows(null)
+      setFileName('')
+    } catch (err) {
+      toast.error('Import failed', { description: (err as Error).message })
+    }
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        setOpen(v)
+        if (!v) {
+          setRows(null)
+          setFileName('')
+          setParseError(null)
+        }
+      }}
+    >
+      <DialogTrigger asChild>
+        <Button variant="outline">
+          <FileSpreadsheet className="h-4 w-4" /> Bulk import
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Bulk import medications</DialogTitle>
+          <DialogDescription>Upload a .csv or .xlsx file with your medication list.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() =>
+              downloadCsvTemplate(IMPORT_HEADERS, 'drug-import-template.csv', [
+                'Lisinopril',
+                'Prinivil, Zestril',
+                'ACE Inhibitor',
+                'cardiology',
+                'tablet',
+                '10mg',
+                'Pharmacy A',
+                '3',
+                'B12',
+                'no',
+                'no',
+                'no',
+                'Example row — delete before importing',
+              ])
+            }
+          >
+            <Download className="h-3.5 w-3.5" /> Download CSV template
+          </Button>
+
+          <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed p-8 text-center hover:bg-accent">
+            <Upload className="h-6 w-6 text-muted-foreground" />
+            <span className="text-sm font-medium">{fileName || 'Click to choose a .csv or .xlsx file'}</span>
+            <input type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleFile} />
+          </label>
+
+          {parseError && <p className="text-sm text-destructive">{parseError}</p>}
+
+          {rows && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium">{rows.length} medications ready to import</p>
+              <div className="max-h-64 overflow-y-auto rounded-lg border scrollbar-thin">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Generic name</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Location</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {rows.slice(0, 20).map((r, i) => (
+                      <TableRow key={i}>
+                        <TableCell>{r.generic_name}</TableCell>
+                        <TableCell>{r.category ? categoryLabel(r.category) : '—'}</TableCell>
+                        <TableCell>{r.storage_room}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                {rows.length > 20 && (
+                  <p className="p-2 text-center text-xs text-muted-foreground">
+                    +{rows.length - 20} more not shown
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button onClick={handleImport} disabled={!rows || bulkImport.isPending}>
+            {bulkImport.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+            Import {rows ? rows.length : ''} medications
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

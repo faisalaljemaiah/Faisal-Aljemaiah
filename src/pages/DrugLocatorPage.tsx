@@ -5,27 +5,46 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useDrugSearch } from '@/hooks/useDrugs'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
+import { MEDICATION_CATEGORIES, categoryLabel } from '@/lib/constants'
+import type { MedicationCategory } from '@/types/database'
 
 export default function DrugLocatorPage() {
   const [search, setSearch] = React.useState('')
+  const [category, setCategory] = React.useState<MedicationCategory | 'all'>('all')
   const debounced = useDebouncedValue(search, 200)
-  const { data: drugs, isLoading } = useDrugSearch(debounced)
+  const { data: drugs, isLoading } = useDrugSearch(debounced, category)
 
   return (
     <div>
       <PageHeader title="Drug Locator" description="Find where medications are stored — fast." />
 
-      <div className="relative mb-5 max-w-md">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by generic or brand name..."
-          className="pl-9"
-          autoFocus
-        />
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row">
+        <div className="relative max-w-md flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by generic or brand name..."
+            className="pl-9"
+            autoFocus
+          />
+        </div>
+        <Select value={category} onValueChange={(v) => setCategory(v as MedicationCategory | 'all')}>
+          <SelectTrigger className="sm:w-56">
+            <SelectValue placeholder="All categories" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All categories</SelectItem>
+            {MEDICATION_CATEGORIES.map((c) => (
+              <SelectItem key={c.value} value={c.value}>
+                {c.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {isLoading ? (
@@ -45,7 +64,10 @@ export default function DrugLocatorPage() {
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {(drugs ?? []).map((drug) => (
-            <Card key={drug.id}>
+            <Card key={drug.id} className="overflow-hidden">
+              {drug.image_urls[0] && (
+                <img src={drug.image_urls[0]} alt={drug.generic_name} className="h-32 w-full object-cover" />
+              )}
               <CardContent className="space-y-3 pt-5">
                 <div className="flex items-start justify-between gap-2">
                   <div>
@@ -54,11 +76,10 @@ export default function DrugLocatorPage() {
                       <p className="text-xs text-muted-foreground">{drug.brand_names.join(', ')}</p>
                     )}
                   </div>
-                  {drug.drug_class && (
-                    <Badge variant="secondary" className="shrink-0">
-                      {drug.drug_class}
-                    </Badge>
-                  )}
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    {drug.category && <Badge variant="outline">{categoryLabel(drug.category)}</Badge>}
+                    {drug.drug_class && <Badge variant="secondary">{drug.drug_class}</Badge>}
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-2 rounded-lg bg-accent/60 p-2.5 text-sm">
