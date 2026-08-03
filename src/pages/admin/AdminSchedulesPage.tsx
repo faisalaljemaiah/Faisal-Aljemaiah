@@ -26,22 +26,24 @@ import { useCreateRotation, useDeleteRotation, useRotations } from '@/hooks/useR
 import { useAllShiftAssignments, useCreateShift, useDeleteShift } from '@/hooks/useShifts'
 import { useInterns } from '@/hooks/useProfiles'
 import { formatDate, formatDateTime } from '@/lib/utils'
+import InternScheduleGrid from './InternScheduleGrid'
 
 export default function AdminSchedulesPage() {
-  const [tab, setTab] = React.useState<'shifts' | 'rotations'>('shifts')
+  const [tab, setTab] = React.useState<'assign' | 'shifts' | 'rotations'>('assign')
 
   return (
     <div>
-      <PageHeader title="Schedules" description="Create rotations, publish shifts, and assign interns." />
+      <PageHeader title="Schedules" description="Assign shifts per intern, create rotations, and publish one-off shifts." />
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)} className="mb-5">
         <TabsList>
+          <TabsTrigger value="assign">Assign Shifts</TabsTrigger>
           <TabsTrigger value="shifts">Shifts</TabsTrigger>
           <TabsTrigger value="rotations">Rotations</TabsTrigger>
         </TabsList>
       </Tabs>
 
-      {tab === 'shifts' ? <ShiftsPanel /> : <RotationsPanel />}
+      {tab === 'assign' ? <InternScheduleGrid /> : tab === 'shifts' ? <ShiftsPanel /> : <RotationsPanel />}
     </div>
   )
 }

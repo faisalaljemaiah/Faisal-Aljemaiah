@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
+import { periodTimes, SHIFT_PERIODS, type ShiftPeriod } from '@/lib/shiftPeriods'
 import type { Shift, ShiftAssignment, ShiftStatus } from '@/types/database'
 
 export function useMyShiftAssignments() {
@@ -31,6 +32,89 @@ export function useAllShiftAssignments() {
         .order('created_at', { ascending: false })
       if (error) throw error
       return data as ShiftAssignment[]
+    },
+  })
+}
+
+export function useShiftAssignmentsInRange(startIso: string, endIso: string) {
+  return useQuery({
+    queryKey: ['shift-assignments', 'range', startIso, endIso],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('shift_assignments')
+        .select('*, shift:shifts!inner(*), user:profiles(*)')
+        .gte('shift.start_time', startIso)
+        .lt('shift.start_time', endIso)
+      if (error) throw error
+      return data as ShiftAssignment[]
+    },
+  })
+}
+
+export interface ScheduleChange {
+  date: Date
+  period: ShiftPeriod
+}
+
+export function useSaveInternSchedule() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({
+      internId,
+      toAssign,
+      toRemoveAssignmentIds,
+      createdBy,
+    }: {
+      internId: string
+      toAssign: ScheduleChange[]
+      toRemoveAssignmentIds: string[]
+      createdBy: string
+    }) => {
+      if (toRemoveAssignmentIds.length > 0) {
+        const { error } = await supabase.from('shift_assignments').delete().in('id', toRemoveAssignmentIds)
+        if (error) throw error
+      }
+
+      for (const { date, period } of toAssign) {
+        const { start, end } = periodTimes(date, period)
+        const startIso = start.toISOString()
+        const endIso = end.toISOString()
+
+        const { data: existing, error: findError } = await supabase
+          .from('shifts')
+          .select('id')
+          .eq('start_time', startIso)
+          .eq('end_time', endIso)
+          .maybeSingle()
+        if (findError) throw findError
+
+        let shiftId = existing?.id as string | undefined
+        if (!shiftId) {
+          const label = SHIFT_PERIODS.find((p) => p.id === period)!.label
+          const { data: created, error: createError } = await supabase
+            .from('shifts')
+            .insert({
+              title: `${label} Shift`,
+              shift_type: 'clinical',
+              start_time: startIso,
+              end_time: endIso,
+              created_by: createdBy,
+            })
+            .select('id')
+            .single()
+          if (createError) throw createError
+          shiftId = created.id
+        }
+
+        const { error: assignError } = await supabase
+          .from('shift_assignments')
+          .upsert({ shift_id: shiftId, user_id: internId }, { onConflict: 'shift_id,user_id', ignoreDuplicates: true })
+        if (assignError) throw assignError
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['shift-assignments'] })
+      queryClient.invalidateQueries({ queryKey: ['shifts'] })
     },
   })
 }
