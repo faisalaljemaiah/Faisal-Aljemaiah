@@ -1,0 +1,112 @@
+import * as React from 'react'
+import { Link } from 'react-router-dom'
+import { MessagesSquare, User, Clock, History } from 'lucide-react'
+import { PageHeader } from '@/components/PageHeader'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useCounselingCases, useMyCounselingAttempts } from '@/hooks/useCounseling'
+import { formatDateTime } from '@/lib/utils'
+import type { CaseDifficulty } from '@/types/database'
+
+const difficultyVariant: Record<CaseDifficulty, 'success' | 'warning' | 'destructive'> = {
+  beginner: 'success',
+  intermediate: 'warning',
+  advanced: 'destructive',
+}
+
+export default function CounselingSimulatorPage() {
+  const [filter, setFilter] = React.useState<'all' | CaseDifficulty>('all')
+  const { data: cases, isLoading } = useCounselingCases()
+  const { data: attempts } = useMyCounselingAttempts()
+
+  const filtered = (cases ?? []).filter((c) => filter === 'all' || c.difficulty === filter)
+  const attemptedCaseIds = new Set((attempts ?? []).map((a) => a.case_id))
+
+  return (
+    <div>
+      <PageHeader title="Counseling Simulator" description="Practice patient counseling with realistic virtual cases." />
+
+      <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)} className="mb-5">
+        <TabsList>
+          <TabsTrigger value="all">All</TabsTrigger>
+          <TabsTrigger value="beginner">Beginner</TabsTrigger>
+          <TabsTrigger value="intermediate">Intermediate</TabsTrigger>
+          <TabsTrigger value="advanced">Advanced</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      {isLoading ? (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-44 w-full" />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center gap-2 py-16 text-center">
+            <MessagesSquare className="h-10 w-10 text-muted-foreground" />
+            <p className="font-medium">No cases available</p>
+            <p className="text-sm text-muted-foreground">Check back once new cases are published.</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {filtered.map((c) => (
+            <Card key={c.id}>
+              <CardHeader className="space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <CardTitle className="text-base">{c.title}</CardTitle>
+                  <Badge variant={difficultyVariant[c.difficulty]} className="shrink-0 capitalize">
+                    {c.difficulty}
+                  </Badge>
+                </div>
+                <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <User className="h-3.5 w-3.5" /> {c.patient_name}
+                  {c.patient_age ? `, ${c.patient_age}` : ''} · {c.medication}
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="line-clamp-3 text-sm text-muted-foreground">{c.scenario}</p>
+                <div className="flex items-center justify-between">
+                  {attemptedCaseIds.has(c.id) ? (
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <History className="h-3.5 w-3.5" /> Attempted
+                    </span>
+                  ) : (
+                    <span />
+                  )}
+                  <Button asChild size="sm">
+                    <Link to={`/counseling-simulator/${c.id}`}>Start case</Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-4 w-4 text-primary" /> Completion History
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {(attempts ?? []).length === 0 && <p className="text-sm text-muted-foreground">No attempts yet.</p>}
+          {(attempts ?? []).slice(0, 8).map((a) => (
+            <div key={a.id} className="flex items-center justify-between rounded-lg border p-3 text-sm">
+              <div>
+                <p className="font-medium">{a.case?.title ?? 'Case'}</p>
+                <p className="text-xs text-muted-foreground">{formatDateTime(a.completed_at)}</p>
+              </div>
+              <Badge variant={a.score >= 80 ? 'success' : a.score >= 50 ? 'warning' : 'destructive'}>{a.score}%</Badge>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
