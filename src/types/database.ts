@@ -208,6 +208,16 @@ export interface CounselingCase {
   updated_at: string
 }
 
+export interface CounselingCaseQuestion {
+  id: string
+  case_id: string
+  question: string
+  choices: string[]
+  correct_index: number
+  explanation: string | null
+  order_index: number
+}
+
 export interface CounselingAttempt {
   id: string
   case_id: string
@@ -219,6 +229,8 @@ export interface CounselingAttempt {
   feedback: string | null
   duration_seconds: number | null
   points_awarded: number
+  mcq_score: number | null
+  mcq_total: number | null
   completed_at: string
   case?: CounselingCase
 }
