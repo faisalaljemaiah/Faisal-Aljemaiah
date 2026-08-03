@@ -79,7 +79,7 @@ export function useCreateIntern() {
   return useMutation({
     mutationFn: async (input: CreateInternInput) => {
       const { data, error } = await supabase.functions.invoke('admin-manage-user', {
-        body: { action: 'create', ...input },
+        body: { action: 'create', ...input, redirectTo: `${window.location.origin}/reset-password` },
       })
       if (error) throw error
       if (data?.error) throw new Error(data.error)
