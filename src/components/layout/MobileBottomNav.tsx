@@ -2,16 +2,17 @@ import { NavLink } from 'react-router-dom'
 import { LayoutDashboard, CalendarDays, Pill, MapPinned, MessagesSquare } from 'lucide-react'
 import * as React from 'react'
 import { cn } from '@/lib/utils'
+import { featureColors, type FeatureColorKey } from '@/lib/featureColors'
 
 // Fast-access shortcuts to the five destinations interns reach for most on a
 // phone. Full navigation (Reflections, Leaderboard, Admin, etc.) still lives
 // in the hamburger sheet — this bar is a supplement, not a replacement.
-const items = [
-  { href: '/', end: true, icon: LayoutDashboard, label: 'Home' },
-  { href: '/schedule', end: false, icon: CalendarDays, label: 'Schedule' },
-  { href: '/drug-of-the-day', end: false, icon: Pill, label: 'Daily Drug' },
-  { href: '/drug-locator', end: false, icon: MapPinned, label: 'Locator' },
-  { href: '/counseling-simulator', end: false, icon: MessagesSquare, label: 'Counseling' },
+const items: { href: string; end: boolean; icon: typeof LayoutDashboard; label: string; colorKey: FeatureColorKey }[] = [
+  { href: '/', end: true, icon: LayoutDashboard, label: 'Home', colorKey: 'home' },
+  { href: '/schedule', end: false, icon: CalendarDays, label: 'Schedule', colorKey: 'schedule' },
+  { href: '/drug-of-the-day', end: false, icon: Pill, label: 'Daily Drug', colorKey: 'drugOfDay' },
+  { href: '/drug-locator', end: false, icon: MapPinned, label: 'Locator', colorKey: 'drugLocator' },
+  { href: '/counseling-simulator', end: false, icon: MessagesSquare, label: 'Counseling', colorKey: 'counseling' },
 ]
 
 // Mirrors Instagram's bottom bar: a floating pill that shrinks and drops its
@@ -65,11 +66,13 @@ export function MobileBottomNav() {
     <nav className="chrome-surface pb-safe fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 lg:hidden">
       <div
         className={cn(
-          'flex items-stretch justify-between rounded-full border bg-background/90 shadow-lg backdrop-blur-lg transition-all duration-300 ease-out-expo supports-[backdrop-filter]:bg-background/75',
+          'flex items-stretch justify-between rounded-full border border-white/20 bg-background/40 shadow-lg backdrop-blur-2xl transition-all duration-300 ease-out-expo supports-[backdrop-filter]:bg-background/30 dark:border-white/10',
           compact ? 'mb-2 w-[72%] gap-0.5 px-1.5 py-1.5' : 'mb-4 w-full max-w-md gap-1 px-2 py-2'
         )}
       >
-        {items.map((item) => (
+        {items.map((item) => {
+          const colors = featureColors[item.colorKey]
+          return (
           <NavLink
             key={item.href}
             to={item.href}
@@ -78,7 +81,7 @@ export function MobileBottomNav() {
               cn(
                 'flex flex-1 flex-col items-center font-medium transition-[color,padding,gap] duration-300 ease-out-expo',
                 compact ? 'gap-0 py-1 text-[11px]' : 'gap-1 py-1 text-[11px]',
-                isActive ? 'text-primary' : 'text-muted-foreground'
+                isActive ? colors.icon : 'text-muted-foreground'
               )
             }
           >
@@ -88,10 +91,17 @@ export function MobileBottomNav() {
                   className={cn(
                     'flex items-center justify-center rounded-full transition-[background-color,transform,width,height] duration-300 ease-out-expo',
                     compact ? 'h-9 w-9' : 'h-8 w-8',
-                    isActive && 'scale-105 bg-accent'
+                    isActive && ['scale-105', colors.activeChip]
                   )}
                 >
-                  <item.icon className={cn('transition-[width,height] duration-300 ease-out-expo', compact ? 'h-5 w-5' : 'h-[18px] w-[18px]')} />
+                  <item.icon
+                    className={cn(
+                      'transition-[width,height] duration-300 ease-out-expo',
+                      compact ? 'h-5 w-5' : 'h-[18px] w-[18px]',
+                      !isActive && colors.icon,
+                      !isActive && 'opacity-60'
+                    )}
+                  />
                 </span>
                 <span
                   className={cn(
@@ -104,7 +114,8 @@ export function MobileBottomNav() {
               </>
             )}
           </NavLink>
-        ))}
+          )
+        })}
       </div>
     </nav>
   )

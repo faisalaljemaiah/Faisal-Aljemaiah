@@ -23,12 +23,13 @@ import { useTodaysDrug } from '@/hooks/useDrugOfDay'
 import { useAnnouncements } from '@/hooks/useAnnouncements'
 import { useLeaderboard } from '@/hooks/useLeaderboard'
 import { formatDate, formatTime, getInitials, cn } from '@/lib/utils'
+import { featureColors } from '@/lib/featureColors'
 
 const quickActions = [
-  { label: 'Take Drug Quiz', href: '/drug-of-the-day', icon: Pill },
-  { label: 'Locate a Drug', href: '/drug-locator', icon: MapPinned },
-  { label: 'Practice Counseling', href: '/counseling-simulator', icon: MessagesSquare },
-  { label: 'Write Reflection', href: '/reflections', icon: NotebookPen },
+  { label: 'Take Drug Quiz', href: '/drug-of-the-day', icon: Pill, colorKey: 'drugOfDay' as const },
+  { label: 'Locate a Drug', href: '/drug-locator', icon: MapPinned, colorKey: 'drugLocator' as const },
+  { label: 'Practice Counseling', href: '/counseling-simulator', icon: MessagesSquare, colorKey: 'counseling' as const },
+  { label: 'Write Reflection', href: '/reflections', icon: NotebookPen, colorKey: 'reflections' as const },
 ]
 
 export default function DashboardPage() {
@@ -78,7 +79,7 @@ export default function DashboardPage() {
                 today.map((a) => (
                   <div key={a.id} className="flex items-center justify-between rounded-lg border p-3">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+                      <div className={cn('flex h-9 w-9 items-center justify-center rounded-lg', featureColors.schedule.chip)}>
                         <CalendarClock className="h-4 w-4" />
                       </div>
                       <div>
@@ -130,7 +131,7 @@ export default function DashboardPage() {
           <Reveal delay={140}><Card>
             <CardHeader className="flex-row items-center justify-between space-y-0">
               <CardTitle className="flex items-center gap-2">
-                <Pill className="h-4 w-4 text-primary" /> Drug of the Day
+                <Pill className={cn('h-4 w-4', featureColors.drugOfDay.icon)} /> Drug of the Day
               </CardTitle>
               <Button variant="ghost" size="sm" asChild>
                 <Link to="/drug-of-the-day">
@@ -163,16 +164,21 @@ export default function DashboardPage() {
               <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-2">
-              {quickActions.map((action) => (
-                <Link
-                  key={action.href}
-                  to={action.href}
-                  className="flex flex-col items-center gap-2 rounded-lg border p-3 text-center text-xs font-medium transition-[color,background-color,box-shadow,transform] duration-150 ease-out-expo hover:-translate-y-0.5 hover:bg-accent hover:shadow-sm active:translate-y-0 active:scale-[0.98]"
-                >
-                  <action.icon className="h-5 w-5 text-primary" />
-                  {action.label}
-                </Link>
-              ))}
+              {quickActions.map((action) => {
+                const colors = featureColors[action.colorKey]
+                return (
+                  <Link
+                    key={action.href}
+                    to={action.href}
+                    className="flex flex-col items-center gap-2 rounded-lg border p-3 text-center text-xs font-medium transition-[color,background-color,box-shadow,transform] duration-150 ease-out-expo hover:-translate-y-0.5 hover:shadow-sm active:translate-y-0 active:scale-[0.98]"
+                  >
+                    <span className={cn('flex h-9 w-9 items-center justify-center rounded-full', colors.chip)}>
+                      <action.icon className="h-[18px] w-[18px]" />
+                    </span>
+                    {action.label}
+                  </Link>
+                )
+              })}
             </CardContent>
           </Card></Reveal>
 
@@ -180,7 +186,7 @@ export default function DashboardPage() {
           <Reveal delay={70}><Card>
             <CardHeader className="flex-row items-center justify-between space-y-0">
               <CardTitle className="flex items-center gap-2">
-                <Trophy className="h-4 w-4 text-primary" /> Weekly Leaders
+                <Trophy className={cn('h-4 w-4', featureColors.leaderboard.icon)} /> Weekly Leaders
               </CardTitle>
               <Button variant="ghost" size="sm" asChild>
                 <Link to="/leaderboard">
@@ -226,7 +232,7 @@ export default function DashboardPage() {
           <Reveal delay={140}><Card>
             <CardHeader className="flex-row items-center justify-between space-y-0">
               <CardTitle className="flex items-center gap-2">
-                <Megaphone className="h-4 w-4 text-primary" /> Announcements
+                <Megaphone className={cn('h-4 w-4', featureColors.announcements.icon)} /> Announcements
               </CardTitle>
               <Button variant="ghost" size="sm" asChild>
                 <Link to="/announcements">

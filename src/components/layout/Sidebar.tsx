@@ -1,7 +1,29 @@
 import { NavLink } from 'react-router-dom'
 import { cn } from '@/lib/utils'
-import { mainNavItems, adminNavItems } from './nav-items'
+import { mainNavItems, adminNavItems, type NavItem } from './nav-items'
+import { featureColors } from '@/lib/featureColors'
 import { useAuth } from '@/contexts/AuthContext'
+
+function SidebarLink({ item, onNavigate }: { item: NavItem; onNavigate?: () => void }) {
+  const colors = featureColors[item.colorKey]
+
+  return (
+    <NavLink
+      to={item.href}
+      end={item.href === '/'}
+      onClick={onNavigate}
+      className={({ isActive }) =>
+        cn(
+          'flex items-center gap-3 rounded-full px-3 py-2 text-sm font-medium transition-colors',
+          isActive ? colors.activeChip : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/60'
+        )
+      }
+    >
+      <item.icon className={cn('h-4 w-4 shrink-0', colors.icon)} />
+      {item.label}
+    </NavLink>
+  )
+}
 
 export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const { profile } = useAuth()
@@ -15,45 +37,14 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
       <nav className="chrome-surface flex-1 space-y-1 overflow-y-auto px-3 py-4 scrollbar-thin">
         {mainNavItems.map((item) => (
-          <NavLink
-            key={item.href}
-            to={item.href}
-            end={item.href === '/'}
-            onClick={onNavigate}
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-3 rounded-full px-3 py-2 text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                  : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground'
-              )
-            }
-          >
-            <item.icon className="h-4 w-4 shrink-0" />
-            {item.label}
-          </NavLink>
+          <SidebarLink key={item.href} item={item} onNavigate={onNavigate} />
         ))}
 
         {profile?.role === 'admin' && (
           <>
             <div className="my-3 border-t border-sidebar-border" />
             {adminNavItems.map((item) => (
-              <NavLink
-                key={item.href}
-                to={item.href}
-                onClick={onNavigate}
-                className={({ isActive }) =>
-                  cn(
-                    'flex items-center gap-3 rounded-full px-3 py-2 text-sm font-medium transition-colors',
-                    isActive
-                      ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                      : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground'
-                  )
-                }
-              >
-                <item.icon className="h-4 w-4 shrink-0" />
-                {item.label}
-              </NavLink>
+              <SidebarLink key={item.href} item={item} onNavigate={onNavigate} />
             ))}
           </>
         )}
