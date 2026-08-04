@@ -166,7 +166,7 @@ export default function DashboardPage() {
                 <Link
                   key={action.href}
                   to={action.href}
-                  className="flex flex-col items-center gap-2 rounded-lg border p-3 text-center text-xs font-medium transition-colors hover:bg-accent"
+                  className="flex flex-col items-center gap-2 rounded-lg border p-3 text-center text-xs font-medium transition-[color,background-color,box-shadow,transform] duration-150 ease-out-expo hover:-translate-y-0.5 hover:bg-accent hover:shadow-sm active:translate-y-0 active:scale-[0.98]"
                 >
                   <action.icon className="h-5 w-5 text-primary" />
                   {action.label}
