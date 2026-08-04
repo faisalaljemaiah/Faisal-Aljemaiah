@@ -179,6 +179,8 @@
     font-feature-settings: "cv11", "ss01";
     overscroll-behavior-y: contain;
     -webkit-tap-highlight-color: transparent;
+    /* Blocks double-tap-to-zoom; the viewport meta tag handles pinch-zoom. */
+    touch-action: manipulation;
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-heading);
