@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { toast } from 'sonner'
 import { ChevronLeft, ChevronRight, Search, X } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -44,7 +45,7 @@ export default function AdminScheduleGrid() {
     try {
       await setEntry.mutateAsync({ userId, date, code, createdBy: profile.id })
     } catch (e) {
-      console.error(e)
+      toast.error('Could not save that day', { description: (e as Error).message })
     }
   }
 
