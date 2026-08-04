@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { toast } from 'sonner'
-import { Plus, Trash2, Pencil, X, Loader2, FileSpreadsheet, Download } from 'lucide-react'
+import { Plus, Trash2, Pencil, X, Loader2, FileSpreadsheet, Download, Sparkles } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -29,6 +29,7 @@ import {
   useDeleteCounselingCase,
   useUpdateCounselingCase,
   useBulkImportCounselingCases,
+  useGenerateCounselingCase,
   type CounselingQuestionInput,
   type CounselingCaseImportRow,
 } from '@/hooks/useCounseling'
@@ -76,6 +77,16 @@ export default function AdminCounselingCasesPage() {
   const createCase = useCreateCounselingCase()
   const updateCase = useUpdateCounselingCase()
   const deleteCase = useDeleteCounselingCase()
+  const generateCase = useGenerateCounselingCase()
+
+  async function handleGenerate() {
+    try {
+      const result = await generateCase.mutateAsync()
+      toast.success('Case generated', { description: result.title })
+    } catch (e) {
+      toast.error('Could not generate a case', { description: (e as Error).message })
+    }
+  }
 
   const [open, setOpen] = React.useState(false)
   const [editing, setEditing] = React.useState<CounselingCase | null>(null)
@@ -191,6 +202,10 @@ export default function AdminCounselingCasesPage() {
         description="Manage virtual patient counseling scenarios."
         actions={
           <div className="flex gap-2">
+            <Button variant="outline" onClick={handleGenerate} disabled={generateCase.isPending}>
+              {generateCase.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              Generate with AI
+            </Button>
             <BulkImportCasesDialog />
             <Button onClick={openNew}>
               <Plus className="h-4 w-4" /> New case
@@ -208,7 +223,14 @@ export default function AdminCounselingCasesPage() {
               <CardContent className="space-y-2 pt-5">
                 <div className="flex items-start justify-between gap-2">
                   <p className="font-semibold">{c.title}</p>
-                  <Badge variant={c.is_active ? 'success' : 'secondary'}>{c.is_active ? 'Active' : 'Draft'}</Badge>
+                  <div className="flex shrink-0 gap-1">
+                    {c.generated_by_ai && (
+                      <Badge variant="outline" className="gap-1">
+                        <Sparkles className="h-3 w-3" /> AI
+                      </Badge>
+                    )}
+                    <Badge variant={c.is_active ? 'success' : 'secondary'}>{c.is_active ? 'Active' : 'Draft'}</Badge>
+                  </div>
                 </div>
                 <p className="text-xs text-muted-foreground capitalize">
                   {c.difficulty} · {c.medication}

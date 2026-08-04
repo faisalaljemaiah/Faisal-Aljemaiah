@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, CheckCircle2, Circle, User, Sparkles } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Circle, User, Sparkles, Bot } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -92,9 +92,16 @@ export default function CounselingCasePage() {
         title={c.title}
         description={`${c.medication} counseling scenario`}
         actions={
-          <Badge variant={difficultyVariant[c.difficulty]} className="capitalize">
-            {c.difficulty}
-          </Badge>
+          <div className="flex gap-1.5">
+            {c.generated_by_ai && (
+              <Badge variant="outline" className="gap-1">
+                <Bot className="h-3 w-3" /> AI-generated
+              </Badge>
+            )}
+            <Badge variant={difficultyVariant[c.difficulty]} className="capitalize">
+              {c.difficulty}
+            </Badge>
+          </div>
         }
       />
 

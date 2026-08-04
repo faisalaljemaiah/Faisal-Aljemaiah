@@ -109,6 +109,19 @@ export function useCounselingChatReply() {
   })
 }
 
+export function useGenerateCounselingCase() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('generate-counseling-case', { body: {} })
+      if (error) throw error
+      if (data?.error) throw new Error(data.error)
+      return data as { case_id: string; title: string }
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['counseling-cases'] }),
+  })
+}
+
 export type CounselingQuestionInput = {
   question: string
   choices: string[]

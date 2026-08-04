@@ -189,6 +189,7 @@ export interface CounselingCase {
   key_counseling_points: CounselingKeyPoint[]
   common_pitfalls: string | null
   is_active: boolean
+  generated_by_ai: boolean
   created_by: string | null
   created_at: string
   updated_at: string
