@@ -61,7 +61,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
           {/* Today's activities */}
-          <Reveal><Card>
+          <Reveal><Card className="border-orange-200/70 bg-orange-50/60 dark:border-orange-900/40 dark:bg-orange-950/20">
             <CardHeader className="flex-row items-center justify-between space-y-0">
               <CardTitle>Today&apos;s Activities</CardTitle>
               <Button variant="ghost" size="sm" asChild>
@@ -100,7 +100,7 @@ export default function DashboardPage() {
           </Card></Reveal>
 
           {/* Upcoming shifts */}
-          <Reveal delay={70}><Card>
+          <Reveal delay={70}><Card className="border-cyan-200/70 bg-cyan-50/60 dark:border-cyan-900/40 dark:bg-cyan-950/20">
             <CardHeader>
               <CardTitle>Upcoming Shifts</CardTitle>
             </CardHeader>
@@ -128,7 +128,7 @@ export default function DashboardPage() {
           </Card></Reveal>
 
           {/* Drug of the Day */}
-          <Reveal delay={140}><Card>
+          <Reveal delay={140}><Card className="border-green-200/70 bg-green-50/60 dark:border-green-900/40 dark:bg-green-950/20">
             <CardHeader className="flex-row items-center justify-between space-y-0">
               <CardTitle className="flex items-center gap-2">
                 <Pill className={cn('h-4 w-4', featureColors.drugOfDay.icon)} /> Drug of the Day
