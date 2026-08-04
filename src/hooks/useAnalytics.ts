@@ -5,22 +5,22 @@ export function useAnalyticsSummary() {
   return useQuery({
     queryKey: ['analytics-summary'],
     queryFn: async () => {
-      const [drugCompletions, counselingAttempts, reflections, shiftAssignments, profiles] = await Promise.all([
+      const [drugCompletions, counselingAttempts, reflections, scheduleEntries, profiles] = await Promise.all([
         supabase.from('drug_of_day_completions').select('id, completed_at'),
         supabase.from('counseling_attempts').select('id, score, completed_at'),
         supabase.from('reflections').select('id, status'),
-        supabase.from('shift_assignments').select('id, status'),
+        supabase.from('schedule_entries').select('id, code'),
         supabase.from('profiles').select('id, role, points'),
       ])
 
       if (drugCompletions.error) throw drugCompletions.error
       if (counselingAttempts.error) throw counselingAttempts.error
       if (reflections.error) throw reflections.error
-      if (shiftAssignments.error) throw shiftAssignments.error
+      if (scheduleEntries.error) throw scheduleEntries.error
       if (profiles.error) throw profiles.error
 
-      const attendanceBreakdown = shiftAssignments.data!.reduce<Record<string, number>>((acc, s) => {
-        acc[s.status] = (acc[s.status] ?? 0) + 1
+      const scheduleBreakdown = scheduleEntries.data!.reduce<Record<string, number>>((acc, s) => {
+        acc[s.code] = (acc[s.code] ?? 0) + 1
         return acc
       }, {})
 
@@ -44,7 +44,7 @@ export function useAnalyticsSummary() {
         avgCounselingScore,
         avgPoints,
         internCount: interns.length,
-        attendanceBreakdown,
+        scheduleBreakdown,
         reflectionBreakdown,
       }
     },

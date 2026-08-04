@@ -2,24 +2,29 @@ import { Users, CalendarDays, NotebookPen, Megaphone } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useInterns } from '@/hooks/useProfiles'
-import { useAllShiftAssignments } from '@/hooks/useShifts'
+import { useAllScheduleEntries } from '@/hooks/useSchedule'
 import { useAllReflections } from '@/hooks/useReflections'
 import { useAnnouncements } from '@/hooks/useAnnouncements'
+import { dateKey } from '@/lib/scheduleDates'
 import { formatDateTime } from '@/lib/utils'
 
 export default function AdminOverviewPage() {
   const { data: interns, isLoading: internsLoading } = useInterns()
-  const { data: assignments, isLoading: assignmentsLoading } = useAllShiftAssignments()
+  const today = new Date()
+  const { data: todaysEntries, isLoading: entriesLoading } = useAllScheduleEntries(today, today)
   const { data: reflections, isLoading: reflectionsLoading } = useAllReflections()
   const { data: announcements } = useAnnouncements(5)
 
-  const today = new Date().toDateString()
-  const todaysShifts = (assignments ?? []).filter((a) => a.shift && new Date(a.shift.start_time).toDateString() === today)
   const pendingReflections = (reflections ?? []).filter((r) => r.status === 'submitted')
 
   const stats = [
     { label: 'Active Interns', value: interns?.length ?? 0, icon: Users, loading: internsLoading },
-    { label: "Today's Shifts", value: todaysShifts.length, icon: CalendarDays, loading: assignmentsLoading },
+    {
+      label: "Today's Assignments",
+      value: (todaysEntries ?? []).filter((e) => e.date === dateKey(today)).length,
+      icon: CalendarDays,
+      loading: entriesLoading,
+    },
     { label: 'Reflections to Review', value: pendingReflections.length, icon: NotebookPen, loading: reflectionsLoading },
     { label: 'Announcements Posted', value: announcements?.length ?? 0, icon: Megaphone, loading: false },
   ]

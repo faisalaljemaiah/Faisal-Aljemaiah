@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom'
 import {
-  CalendarClock,
   Pill,
   MapPinned,
   MessagesSquare,
@@ -18,11 +17,13 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useAuth } from '@/contexts/AuthContext'
-import { useMyShiftAssignments } from '@/hooks/useShifts'
+import { useMyScheduleEntries } from '@/hooks/useSchedule'
 import { useTodaysDrug } from '@/hooks/useDrugOfDay'
 import { useAnnouncements } from '@/hooks/useAnnouncements'
 import { useLeaderboard } from '@/hooks/useLeaderboard'
-import { formatDate, formatTime, getInitials, cn } from '@/lib/utils'
+import { addDays, dateKey } from '@/lib/scheduleDates'
+import { scheduleCodeMeta, scheduleCodeText } from '@/lib/scheduleCodes'
+import { getInitials, cn } from '@/lib/utils'
 import { featureColors } from '@/lib/featureColors'
 
 const quickActions = [
@@ -34,20 +35,18 @@ const quickActions = [
 
 export default function DashboardPage() {
   const { profile } = useAuth()
-  const { data: assignments, isLoading: shiftsLoading } = useMyShiftAssignments()
+  const now = new Date()
+  const { data: entries, isLoading: scheduleLoading } = useMyScheduleEntries(now, addDays(now, 13))
   const { data: drugOfDay, isLoading: drugLoading } = useTodaysDrug()
   const { data: announcements, isLoading: announcementsLoading } = useAnnouncements(4)
   const { data: leaderboard, isLoading: leaderboardLoading } = useLeaderboard('weekly')
 
-  const now = new Date()
-  const upcoming = (assignments ?? [])
-    .filter((a) => a.shift && new Date(a.shift.start_time) >= new Date(now.toDateString()))
-    .sort((a, b) => new Date(a.shift!.start_time).getTime() - new Date(b.shift!.start_time).getTime())
+  const todayKey = dateKey(now)
+  const todayEntry = (entries ?? []).find((e) => e.date === todayKey)
+  const upcoming = (entries ?? [])
+    .filter((e) => e.date > todayKey)
+    .sort((a, b) => a.date.localeCompare(b.date))
     .slice(0, 5)
-
-  const today = (assignments ?? []).filter(
-    (a) => a.shift && new Date(a.shift.start_time).toDateString() === now.toDateString()
-  )
 
   const myRank = leaderboard?.find((row) => row.user_id === profile?.id)
 
@@ -71,55 +70,54 @@ export default function DashboardPage() {
               </Button>
             </CardHeader>
             <CardContent className="space-y-3">
-              {shiftsLoading ? (
+              {scheduleLoading ? (
                 <Skeleton className="h-16 w-full" />
-              ) : today.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No shifts scheduled for today. Enjoy the downtime!</p>
+              ) : !todayEntry ? (
+                <p className="text-sm text-muted-foreground">No activity scheduled for today. Enjoy the downtime!</p>
               ) : (
-                today.map((a) => (
-                  <div key={a.id} className="flex items-center justify-between rounded-lg border p-3">
-                    <div className="flex items-center gap-3">
-                      <div className={cn('flex h-9 w-9 items-center justify-center rounded-lg', featureColors.home.chip)}>
-                        <CalendarClock className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">{a.shift!.title}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatTime(a.shift!.start_time)} – {formatTime(a.shift!.end_time)}
-                          {a.shift!.location ? ` · ${a.shift!.location}` : ''}
-                        </p>
-                      </div>
+                <div className="flex items-center justify-between rounded-lg border p-3">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={cn(
+                        'flex h-9 w-9 items-center justify-center rounded-lg text-sm font-bold',
+                        featureColors.home.chip
+                      )}
+                    >
+                      {scheduleCodeText(todayEntry.code)}
                     </div>
-                    <Badge variant={a.status === 'completed' ? 'success' : 'secondary'} className="capitalize">
-                      {a.status}
-                    </Badge>
+                    <div>
+                      <p className="text-sm font-medium">{scheduleCodeMeta[todayEntry.code].label}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                      </p>
+                    </div>
                   </div>
-                ))
+                </div>
               )}
             </CardContent>
           </Card></Reveal>
 
-          {/* Upcoming shifts */}
+          {/* Upcoming schedule */}
           <Reveal delay={70}><Card className="border-cyan-200/70 bg-cyan-50/60 dark:border-cyan-900/40 dark:bg-cyan-950/20">
             <CardHeader>
-              <CardTitle>Upcoming Shifts</CardTitle>
+              <CardTitle>Upcoming Schedule</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {shiftsLoading ? (
+              {scheduleLoading ? (
                 <Skeleton className="h-24 w-full" />
               ) : upcoming.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No upcoming shifts assigned yet.</p>
+                <p className="text-sm text-muted-foreground">No upcoming activities assigned yet.</p>
               ) : (
-                upcoming.map((a) => (
-                  <div key={a.id} className="flex items-center justify-between rounded-lg border p-3">
+                upcoming.map((e) => (
+                  <div key={e.id} className="flex items-center justify-between rounded-lg border p-3">
                     <div>
-                      <p className="text-sm font-medium">{a.shift!.title}</p>
+                      <p className="text-sm font-medium">{scheduleCodeMeta[e.code].label}</p>
                       <p className="text-xs text-muted-foreground">
-                        {formatDate(a.shift!.start_time)} · {formatTime(a.shift!.start_time)}
+                        {new Date(`${e.date}T00:00:00`).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
                       </p>
                     </div>
                     <Badge variant="outline" className="capitalize">
-                      {a.shift!.shift_type}
+                      {scheduleCodeText(e.code)}
                     </Badge>
                   </div>
                 ))

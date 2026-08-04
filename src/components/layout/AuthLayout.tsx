@@ -22,8 +22,8 @@ export function AuthLayout({ children, title, subtitle }: { children: ReactNode;
             The complete platform for pharmacy intern training &amp; development.
           </h1>
           <p className="max-w-md text-white/80">
-            Manage rotations, track clinical learning, and grow every intern's competency — all in one
-            professional workspace built for hospital pharmacy teams.
+            Manage daily schedules, track clinical learning, and grow every intern's competency — all in
+            one professional workspace built for hospital pharmacy teams.
           </p>
           <div className="grid grid-cols-1 gap-4 pt-4 sm:grid-cols-3">
             <Feature icon={GraduationCap} label="Clinical Learning" />

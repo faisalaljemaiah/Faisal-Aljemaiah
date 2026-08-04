@@ -1,135 +1,124 @@
 import * as React from 'react'
-import { LogIn, LogOut, MapPin } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
 import { Reveal } from '@/components/Reveal'
-import { ScheduleCalendar } from '@/components/ScheduleCalendar'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useMyShiftAssignments, useUpdateShiftAssignmentStatus } from '@/hooks/useShifts'
-import { useRotations } from '@/hooks/useRotations'
-import { formatDate, formatTime } from '@/lib/utils'
-import { toast } from 'sonner'
-import type { ShiftStatus } from '@/types/database'
+import { useMyScheduleEntries } from '@/hooks/useSchedule'
+import { addDays, dateKey, workWeeks } from '@/lib/scheduleDates'
+import { SCHEDULE_CODES, scheduleCodeMeta, scheduleCodeText } from '@/lib/scheduleCodes'
+import { cn } from '@/lib/utils'
+import type { ScheduleEntry } from '@/types/database'
 
-const statusVariant: Record<ShiftStatus, 'default' | 'secondary' | 'success' | 'destructive' | 'warning' | 'outline'> = {
-  scheduled: 'secondary',
-  confirmed: 'default',
-  completed: 'success',
-  missed: 'destructive',
-  excused: 'outline',
-  late: 'warning',
-}
+const WEEK_COUNT = 4
 
 export default function SchedulePage() {
-  const [selectedDate, setSelectedDate] = React.useState(new Date())
-  const { data: assignments, isLoading } = useMyShiftAssignments()
-  const { data: rotations } = useRotations()
-  const updateStatus = useUpdateShiftAssignmentStatus()
+  const [anchorDate, setAnchorDate] = React.useState(() => new Date())
+  const weeks = React.useMemo(() => workWeeks(anchorDate, WEEK_COUNT), [anchorDate])
+  const rangeStart = weeks[0][0]
+  const rangeEnd = weeks[weeks.length - 1][weeks[weeks.length - 1].length - 1]
 
-  const dayAssignments = (assignments ?? [])
-    .filter((a) => a.shift && new Date(a.shift.start_time).toDateString() === selectedDate.toDateString())
-    .sort((a, b) => new Date(a.shift!.start_time).getTime() - new Date(b.shift!.start_time).getTime())
+  const { data: entries, isLoading } = useMyScheduleEntries(rangeStart, rangeEnd)
 
-  async function handleCheckIn(id: string) {
-    try {
-      await updateStatus.mutateAsync({ id, status: 'confirmed', checkInTime: new Date().toISOString() })
-      toast.success('Checked in')
-    } catch (e) {
-      toast.error('Could not check in', { description: (e as Error).message })
-    }
-  }
+  const entryByDate = React.useMemo(() => {
+    const map = new Map<string, ScheduleEntry>()
+    for (const e of entries ?? []) map.set(e.date, e)
+    return map
+  }, [entries])
 
-  async function handleCheckOut(id: string) {
-    try {
-      await updateStatus.mutateAsync({ id, status: 'completed', checkOutTime: new Date().toISOString() })
-      toast.success('Checked out')
-    } catch (e) {
-      toast.error('Could not check out', { description: (e as Error).message })
-    }
-  }
+  const today = new Date()
+  const todayEntry = entryByDate.get(dateKey(today))
+  const todayMeta = todayEntry ? scheduleCodeMeta[todayEntry.code] : null
 
   return (
     <div>
-      <PageHeader title="Schedule" description="Your rotation calendar, shift assignments, and attendance." />
+      <PageHeader title="Schedule" description="Your day-by-day rotation, Sunday through Thursday." />
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Reveal className="lg:col-span-1"><Card>
-          <CardContent className="pt-5">
-            {isLoading ? (
-              <Skeleton className="h-72 w-full" />
-            ) : (
-              <ScheduleCalendar assignments={assignments ?? []} selectedDate={selectedDate} onSelectDate={setSelectedDate} />
-            )}
-          </CardContent>
-        </Card></Reveal>
+      <Reveal><Card>
+        <CardHeader>
+          <CardTitle>Today</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <Skeleton className="h-16 w-full" />
+          ) : todayEntry && todayMeta ? (
+            <div className={cn('flex items-center gap-4 rounded-lg border p-4', todayMeta.cell)}>
+              <span className="text-2xl font-bold">{scheduleCodeText(todayEntry.code)}</span>
+              <div>
+                <p className="font-medium">{todayMeta.label}</p>
+                <p className="text-xs opacity-80">
+                  {today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No activity scheduled for today.</p>
+          )}
+        </CardContent>
+      </Card></Reveal>
 
-        <Reveal delay={70} className="lg:col-span-2"><Card>
-          <CardHeader>
-            <CardTitle>
-              {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {isLoading ? (
-              <Skeleton className="h-24 w-full" />
-            ) : dayAssignments.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No shifts scheduled this day.</p>
-            ) : (
-              dayAssignments.map((a) => (
-                <div key={a.id} className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium">{a.shift!.title}</p>
-                      <Badge variant={statusVariant[a.status]} className="capitalize">
-                        {a.status}
-                      </Badge>
-                    </div>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {formatTime(a.shift!.start_time)} – {formatTime(a.shift!.end_time)}
-                    </p>
-                    {a.shift!.location && (
-                      <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                        <MapPin className="h-3 w-3" /> {a.shift!.location}
-                      </p>
-                    )}
-                    {a.shift!.description && <p className="mt-2 text-sm">{a.shift!.description}</p>}
-                  </div>
-
-                  <div className="flex gap-2">
-                    {a.status === 'scheduled' && (
-                      <Button size="sm" onClick={() => handleCheckIn(a.id)} disabled={updateStatus.isPending}>
-                        <LogIn className="h-4 w-4" /> Check in
-                      </Button>
-                    )}
-                    {a.status === 'confirmed' && (
-                      <Button size="sm" variant="secondary" onClick={() => handleCheckOut(a.id)} disabled={updateStatus.isPending}>
-                        <LogOut className="h-4 w-4" /> Check out
-                      </Button>
-                    )}
-                  </div>
+      <Reveal delay={70}><Card className="mt-4">
+        <CardHeader className="flex-row items-center justify-between space-y-0">
+          <CardTitle>4-Week Overview</CardTitle>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setAnchorDate((d) => addDays(d, -28))}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setAnchorDate((d) => addDays(d, 28))}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {isLoading ? (
+            <Skeleton className="h-72 w-full" />
+          ) : (
+            weeks.map((week, wi) => (
+              <div key={wi}>
+                <p className="mb-1.5 text-xs font-medium text-muted-foreground">
+                  Week {wi + 1} · {week[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} –{' '}
+                  {week[week.length - 1].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                </p>
+                <div className="grid grid-cols-5 gap-2">
+                  {week.map((day) => {
+                    const entry = entryByDate.get(dateKey(day))
+                    const meta = entry ? scheduleCodeMeta[entry.code] : null
+                    const isToday = dateKey(day) === dateKey(today)
+                    return (
+                      <div
+                        key={day.toISOString()}
+                        className={cn(
+                          'rounded-lg border p-2 text-center',
+                          meta ? meta.cell : 'border-dashed',
+                          isToday && 'ring-2 ring-primary ring-offset-2 ring-offset-background'
+                        )}
+                      >
+                        <p className="text-[10px] font-medium uppercase text-muted-foreground">
+                          {day.toLocaleDateString('en-US', { weekday: 'short' })}
+                        </p>
+                        <p className="text-sm font-semibold">{day.getDate()}</p>
+                        <p className="mt-1 text-xs font-bold">{entry ? scheduleCodeText(entry.code) : '—'}</p>
+                      </div>
+                    )
+                  })}
                 </div>
-              ))
-            )}
-          </CardContent>
-        </Card></Reveal>
-      </div>
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card></Reveal>
 
       <Reveal delay={140}><Card className="mt-4">
         <CardHeader>
-          <CardTitle>Active Rotations</CardTitle>
+          <CardTitle>Legend</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {(rotations ?? []).length === 0 && <p className="text-sm text-muted-foreground">No rotations published yet.</p>}
-          {(rotations ?? []).map((r) => (
-            <div key={r.id} className="rounded-lg border p-4">
-              <p className="font-medium">{r.name}</p>
-              <p className="text-xs text-muted-foreground">{r.department}</p>
-              <p className="mt-2 text-xs text-muted-foreground">
-                {formatDate(r.start_date)} – {formatDate(r.end_date)}
-              </p>
-            </div>
+        <CardContent className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-muted-foreground">
+          {SCHEDULE_CODES.map((code) => (
+            <span key={code} className="flex items-center gap-1.5">
+              <span className={cn('h-3 w-3 rounded-sm', scheduleCodeMeta[code].swatch)} />
+              {scheduleCodeText(code)} — {scheduleCodeMeta[code].label}
+            </span>
           ))}
         </CardContent>
       </Card></Reveal>

@@ -383,8 +383,8 @@ export default function AdminInternsPage() {
           <DialogHeader>
             <DialogTitle>Remove {deleteTarget?.full_name}?</DialogTitle>
             <DialogDescription>
-              This permanently deletes their account and all associated data (shifts, reflections, reflections
-              history, counseling attempts, points). This cannot be undone.
+              This permanently deletes their account and all associated data (schedule, reflections,
+              counseling attempts, points). This cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

@@ -1,6 +1,6 @@
 export type UserRole = 'admin' | 'preceptor' | 'intern'
 
-export type ShiftStatus = 'scheduled' | 'confirmed' | 'completed' | 'missed' | 'excused' | 'late'
+export type ScheduleCode = 'OP1' | 'OP2' | 'OP3' | 'COMP' | 'DC' | 'CON' | 'PPT' | 'SURPRISE'
 
 export type AnnouncementPriority = 'low' | 'normal' | 'high' | 'urgent'
 
@@ -34,55 +34,14 @@ export interface Profile {
   updated_at: string
 }
 
-export interface Rotation {
+export interface ScheduleEntry {
   id: string
-  name: string
-  department: string
-  description: string | null
-  location: string | null
-  start_date: string
-  end_date: string
-  created_by: string | null
-  created_at: string
-  updated_at: string
-}
-
-export interface RotationAssignment {
-  id: string
-  rotation_id: string
-  intern_id: string
-  preceptor_id: string | null
-  start_date: string
-  end_date: string
-  status: string
-  created_at: string
-}
-
-export interface Shift {
-  id: string
-  title: string
-  description: string | null
-  location: string | null
-  shift_type: string
-  rotation_id: string | null
-  start_time: string
-  end_time: string
-  created_by: string | null
-  created_at: string
-  updated_at: string
-}
-
-export interface ShiftAssignment {
-  id: string
-  shift_id: string
   user_id: string
-  status: ShiftStatus
-  check_in_time: string | null
-  check_out_time: string | null
-  notes: string | null
+  date: string
+  code: ScheduleCode
+  created_by: string | null
   created_at: string
   updated_at: string
-  shift?: Shift
   user?: Profile
 }
 

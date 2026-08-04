@@ -20,7 +20,7 @@ export default function AdminAnalyticsPage() {
     )
   }
 
-  const attendanceData = Object.entries(data.attendanceBreakdown).map(([name, value]) => ({ name, value }))
+  const scheduleData = Object.entries(data.scheduleBreakdown).map(([name, value]) => ({ name, value }))
   const reflectionData = Object.entries(data.reflectionBreakdown).map(([name, value]) => ({ name, value }))
   const topTenData = (topInterns ?? []).slice(0, 10).map((r) => ({ name: r.full_name.split(' ')[0], points: r.points }))
 
@@ -68,16 +68,16 @@ export default function AdminAnalyticsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Attendance Breakdown</CardTitle>
+            <CardTitle>Schedule Breakdown</CardTitle>
           </CardHeader>
           <CardContent className="h-72">
-            {attendanceData.length === 0 ? (
-              <p className="flex h-full items-center justify-center text-sm text-muted-foreground">No shift data yet.</p>
+            {scheduleData.length === 0 ? (
+              <p className="flex h-full items-center justify-center text-sm text-muted-foreground">No schedule data yet.</p>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={attendanceData} dataKey="value" nameKey="name" innerRadius={50} outerRadius={90} paddingAngle={2}>
-                    {attendanceData.map((_, idx) => (
+                  <Pie data={scheduleData} dataKey="value" nameKey="name" innerRadius={50} outerRadius={90} paddingAngle={2}>
+                    {scheduleData.map((_, idx) => (
                       <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
                     ))}
                   </Pie>

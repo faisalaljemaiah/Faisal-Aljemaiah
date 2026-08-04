@@ -19,14 +19,14 @@ leaderboard, and a full admin panel — built for hospital pharmacy teams.
 ## Features
 
 - **Auth**: login, register, forgot/reset password, profile editing, change password
-- **Dashboard**: upcoming shifts, today's activities, Drug of the Day, weekly leaderboard, announcements, quick actions
-- **Schedule**: intern calendar view, attendance check-in/out, rotations — plus an admin **Assign Shifts** grid (split-screen intern picker + 4-week Mon–Sun Morning/Evening/Night grid, stage-then-save workflow, consecutive-day fairness warning)
+- **Dashboard**: today's activity, upcoming schedule, Drug of the Day, weekly leaderboard, announcements, quick actions
+- **Schedule**: a simple day-by-day roster, Sunday–Thursday, with one short activity code per trainee per day (OP1/OP2/OP3/COMP/DC/CON/PPT/Surprise) — an admin grid assigns every trainee across a 4-week window, and interns see their own days in a read-only view
 - **Drug of the Day**: admin-published clinical spotlight with a scored quiz (server-side grading via Postgres RPC)
 - **Drug Locator**: fast fuzzy search by generic/brand name with shelf/bin/room storage info, medication categories (filterable), photos, and bulk CSV/XLSX import
 - **Counseling Simulator**: virtual patient cases with a counseling checklist and optional MCQ knowledge check, both server-graded and blended into one score; bulk CSV/XLSX case import
 - **Reflections**: draft/submit clinical learning logs with preceptor/admin review
 - **Leaderboard**: weekly / monthly / all-time rankings, badges auto-awarded by point thresholds
-- **Admin Panel**: manage users & roles (including inviting new accounts by email and full profile editing), schedules & rotations, Drug of the Day, drug directory, counseling cases, announcements, reflection review, analytics dashboard
+- **Admin Panel**: manage users & roles (including inviting new accounts by email and full profile editing), the schedule grid, Drug of the Day, drug directory, counseling cases, announcements, reflection review, analytics dashboard
 
 Every feature reads and writes through Supabase with Row Level Security — there
 is no mock data or fake API layer. AI-assisted grading and AI-generated
