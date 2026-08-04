@@ -32,7 +32,7 @@ export function useAllScheduleEntries(startDate: Date, endDate: Date) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('schedule_entries')
-        .select('*, user:profiles(*)')
+        .select('*, user:profiles!schedule_entries_user_id_fkey(*)')
         .gte('date', startKey)
         .lte('date', endKey)
       if (error) throw error
