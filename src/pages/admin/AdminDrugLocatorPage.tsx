@@ -11,7 +11,6 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   Dialog,
   DialogContent,
@@ -30,17 +29,18 @@ import {
   useBulkImportDrugs,
   useUploadDrugImage,
   useRemoveDrugImage,
+  useDrugCategories,
   type DrugImportRow,
 } from '@/hooks/useDrugs'
 import { parseSpreadsheetFile, parseBoolean, downloadCsvTemplate, type ParsedRow } from '@/lib/bulkImport'
-import { MEDICATION_CATEGORIES, categoryLabel } from '@/lib/constants'
-import type { Drug, MedicationCategory } from '@/types/database'
+import { SUGGESTED_MEDICATION_CATEGORIES } from '@/lib/constants'
+import type { Drug } from '@/types/database'
 
 const emptyForm = {
   generic_name: '',
   brand_names: '',
   drug_class: '',
-  category: '' as MedicationCategory | '',
+  category: '',
   dosage_form: '',
   strength: '',
   storage_room: '',
@@ -52,25 +52,10 @@ const emptyForm = {
   notes: '',
 }
 
-const IMPORT_HEADERS = [
-  'generic_name',
-  'brand_names',
-  'drug_class',
-  'category',
-  'dosage_form',
-  'strength',
-  'storage_room',
-  'storage_shelf',
-  'storage_bin',
-  'is_controlled',
-  'is_refrigerated',
-  'is_high_alert',
-  'notes',
-]
-
 export default function AdminDrugLocatorPage() {
   const { profile } = useAuth()
   const { data: drugs, isLoading } = useDrugSearch('')
+  const { data: existingCategories } = useDrugCategories()
   const createDrug = useCreateDrug()
   const updateDrug = useUpdateDrug()
   const deleteDrug = useDeleteDrug()
@@ -81,6 +66,11 @@ export default function AdminDrugLocatorPage() {
   const [editing, setEditing] = React.useState<Drug | null>(null)
   const [form, setForm] = React.useState(emptyForm)
   const [uploadingImage, setUploadingImage] = React.useState(false)
+
+  const categorySuggestions = React.useMemo(
+    () => Array.from(new Set([...(existingCategories ?? []), ...SUGGESTED_MEDICATION_CATEGORIES])).sort(),
+    [existingCategories]
+  )
 
   function openNew() {
     setEditing(null)
@@ -121,7 +111,7 @@ export default function AdminDrugLocatorPage() {
         .map((b) => b.trim())
         .filter(Boolean),
       drug_class: form.drug_class || null,
-      category: form.category || null,
+      category: form.category.trim() || null,
       dosage_form: form.dosage_form || null,
       strength: form.strength || null,
       storage_room: form.storage_room,
@@ -229,9 +219,7 @@ export default function AdminDrugLocatorPage() {
                         {d.generic_name}
                       </div>
                     </TableCell>
-                    <TableCell>
-                      {d.category ? <Badge variant="secondary">{categoryLabel(d.category)}</Badge> : '—'}
-                    </TableCell>
+                    <TableCell>{d.category ? <Badge variant="secondary">{d.category}</Badge> : '—'}</TableCell>
                     <TableCell>{d.brand_names.join(', ') || '—'}</TableCell>
                     <TableCell>
                       {d.storage_room}
@@ -274,19 +262,18 @@ export default function AdminDrugLocatorPage() {
                 <Input value={form.drug_class} onChange={(e) => setForm({ ...form, drug_class: e.target.value })} />
               </div>
               <div className="space-y-2">
-                <Label>Category</Label>
-                <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v as MedicationCategory })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {MEDICATION_CATEGORIES.map((c) => (
-                      <SelectItem key={c.value} value={c.value}>
-                        {c.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>Category / Zone</Label>
+                <Input
+                  value={form.category}
+                  onChange={(e) => setForm({ ...form, category: e.target.value })}
+                  list="category-suggestions"
+                  placeholder="e.g. Cardiology"
+                />
+                <datalist id="category-suggestions">
+                  {categorySuggestions.map((c) => (
+                    <option key={c} value={c} />
+                  ))}
+                </datalist>
               </div>
               <div className="space-y-2">
                 <Label>Dosage form</Label>
@@ -363,6 +350,57 @@ export default function AdminDrugLocatorPage() {
   )
 }
 
+/**
+ * Bulk import accepts two header schemas, auto-detected per row:
+ *  1. Shelf/zone export: storage_type, zone, column, shelf, position, name, flags, note
+ *     (matches real pharmacy shelf-tracking exports)
+ *  2. Generic template: generic_name, brand_names, drug_class, category, dosage_form,
+ *     strength, storage_room, storage_shelf, storage_bin, is_controlled,
+ *     is_refrigerated, is_high_alert, notes
+ */
+function mapImportRow(row: ParsedRow): DrugImportRow | null {
+  if (row.name && row.zone) {
+    const bin = [row.column, row.position].filter((v) => v && v.trim()).join('-')
+    const flagsText = (row.flags ?? '').toLowerCase()
+    const storageType = (row.storage_type ?? '').toLowerCase()
+    return {
+      generic_name: row.name.trim(),
+      brand_names: [],
+      drug_class: null,
+      category: row.zone.trim() || null,
+      dosage_form: null,
+      strength: null,
+      storage_room: row.zone.trim(),
+      storage_shelf: row.shelf?.trim() || null,
+      storage_bin: bin || null,
+      is_controlled: /controll|narcotic|vault/.test(flagsText) || /narcotic|vault/.test(storageType),
+      is_refrigerated: /fridge|refrigerat/.test(flagsText) || /fridge|refrigerat/.test(storageType),
+      is_high_alert: /high[\s-]?alert/.test(flagsText),
+      notes: row.note?.trim() || null,
+    }
+  }
+
+  if (!row.generic_name || !row.storage_room) return null
+  return {
+    generic_name: row.generic_name.trim(),
+    brand_names: (row.brand_names ?? '')
+      .split(/[,;]/)
+      .map((b) => b.trim())
+      .filter(Boolean),
+    drug_class: row.drug_class?.trim() || null,
+    category: row.category?.trim() || null,
+    dosage_form: row.dosage_form?.trim() || null,
+    strength: row.strength?.trim() || null,
+    storage_room: row.storage_room.trim(),
+    storage_shelf: row.storage_shelf?.trim() || null,
+    storage_bin: row.storage_bin?.trim() || null,
+    is_controlled: parseBoolean(row.is_controlled),
+    is_refrigerated: parseBoolean(row.is_refrigerated),
+    is_high_alert: parseBoolean(row.is_high_alert),
+    notes: row.notes?.trim() || null,
+  }
+}
+
 function BulkImportDialog() {
   const { profile } = useAuth()
   const bulkImport = useBulkImportDrugs()
@@ -370,29 +408,6 @@ function BulkImportDialog() {
   const [rows, setRows] = React.useState<DrugImportRow[] | null>(null)
   const [fileName, setFileName] = React.useState('')
   const [parseError, setParseError] = React.useState<string | null>(null)
-
-  function mapRow(row: ParsedRow): DrugImportRow | null {
-    if (!row.generic_name || !row.storage_room) return null
-    const category = MEDICATION_CATEGORIES.find((c) => c.value === row.category?.toLowerCase().trim())?.value
-    return {
-      generic_name: row.generic_name.trim(),
-      brand_names: (row.brand_names ?? '')
-        .split(/[,;]/)
-        .map((b) => b.trim())
-        .filter(Boolean),
-      drug_class: row.drug_class?.trim() || null,
-      category: category ?? null,
-      dosage_form: row.dosage_form?.trim() || null,
-      strength: row.strength?.trim() || null,
-      storage_room: row.storage_room.trim(),
-      storage_shelf: row.storage_shelf?.trim() || null,
-      storage_bin: row.storage_bin?.trim() || null,
-      is_controlled: parseBoolean(row.is_controlled),
-      is_refrigerated: parseBoolean(row.is_refrigerated),
-      is_high_alert: parseBoolean(row.is_high_alert),
-      notes: row.notes?.trim() || null,
-    }
-  }
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -402,9 +417,11 @@ function BulkImportDialog() {
     setRows(null)
     try {
       const parsed = await parseSpreadsheetFile(file)
-      const mapped = parsed.map(mapRow).filter((r): r is DrugImportRow => r !== null)
+      const mapped = parsed.map(mapImportRow).filter((r): r is DrugImportRow => r !== null)
       if (mapped.length === 0) {
-        setParseError('No valid rows found. Make sure "generic_name" and "storage_room" columns are filled in.')
+        setParseError(
+          'No valid rows found. Expected either a "name"+"zone" shelf export, or a "generic_name"+"storage_room" template.'
+        )
         return
       }
       setRows(mapped)
@@ -448,28 +465,50 @@ function BulkImportDialog() {
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Bulk import medications</DialogTitle>
-          <DialogDescription>Upload a .csv or .xlsx file with your medication list.</DialogDescription>
+          <DialogDescription>
+            Upload a .csv or .xlsx file. Either a shelf-tracking export (columns:{' '}
+            <code>storage_type, zone, column, shelf, position, name, flags, note</code>) or the generic template
+            below both work.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <Button
             variant="ghost"
             size="sm"
             onClick={() =>
-              downloadCsvTemplate(IMPORT_HEADERS, 'drug-import-template.csv', [
-                'Lisinopril',
-                'Prinivil, Zestril',
-                'ACE Inhibitor',
-                'cardiology',
-                'tablet',
-                '10mg',
-                'Pharmacy A',
-                '3',
-                'B12',
-                'no',
-                'no',
-                'no',
-                'Example row — delete before importing',
-              ])
+              downloadCsvTemplate(
+                [
+                  'generic_name',
+                  'brand_names',
+                  'drug_class',
+                  'category',
+                  'dosage_form',
+                  'strength',
+                  'storage_room',
+                  'storage_shelf',
+                  'storage_bin',
+                  'is_controlled',
+                  'is_refrigerated',
+                  'is_high_alert',
+                  'notes',
+                ],
+                'drug-import-template.csv',
+                [
+                  'Lisinopril',
+                  'Prinivil, Zestril',
+                  'ACE Inhibitor',
+                  'Cardiology',
+                  'tablet',
+                  '10mg',
+                  'Pharmacy A',
+                  '3',
+                  'B12',
+                  'no',
+                  'no',
+                  'no',
+                  'Example row — delete before importing',
+                ]
+              )
             }
           >
             <Download className="h-3.5 w-3.5" /> Download CSV template
@@ -499,16 +538,18 @@ function BulkImportDialog() {
                     {rows.slice(0, 20).map((r, i) => (
                       <TableRow key={i}>
                         <TableCell>{r.generic_name}</TableCell>
-                        <TableCell>{r.category ? categoryLabel(r.category) : '—'}</TableCell>
-                        <TableCell>{r.storage_room}</TableCell>
+                        <TableCell>{r.category ?? '—'}</TableCell>
+                        <TableCell>
+                          {r.storage_room}
+                          {r.storage_shelf ? ` · Shelf ${r.storage_shelf}` : ''}
+                          {r.storage_bin ? ` · Bin ${r.storage_bin}` : ''}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
                 {rows.length > 20 && (
-                  <p className="p-2 text-center text-xs text-muted-foreground">
-                    +{rows.length - 20} more not shown
-                  </p>
+                  <p className="p-2 text-center text-xs text-muted-foreground">+{rows.length - 20} more not shown</p>
                 )}
               </div>
             </div>

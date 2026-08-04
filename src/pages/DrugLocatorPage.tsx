@@ -6,9 +6,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { useDrugSearch } from '@/hooks/useDrugs'
+import { useDrugSearch, useDrugCategories } from '@/hooks/useDrugs'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
-import { MEDICATION_CATEGORIES, categoryLabel } from '@/lib/constants'
 import type { MedicationCategory } from '@/types/database'
 
 export default function DrugLocatorPage() {
@@ -16,6 +15,7 @@ export default function DrugLocatorPage() {
   const [category, setCategory] = React.useState<MedicationCategory | 'all'>('all')
   const debounced = useDebouncedValue(search, 200)
   const { data: drugs, isLoading } = useDrugSearch(debounced, category)
+  const { data: categories } = useDrugCategories()
 
   return (
     <div>
@@ -38,9 +38,9 @@ export default function DrugLocatorPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All categories</SelectItem>
-            {MEDICATION_CATEGORIES.map((c) => (
-              <SelectItem key={c.value} value={c.value}>
-                {c.label}
+            {(categories ?? []).map((c) => (
+              <SelectItem key={c} value={c}>
+                {c}
               </SelectItem>
             ))}
           </SelectContent>
@@ -77,7 +77,7 @@ export default function DrugLocatorPage() {
                     )}
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1">
-                    {drug.category && <Badge variant="outline">{categoryLabel(drug.category)}</Badge>}
+                    {drug.category && <Badge variant="outline">{drug.category}</Badge>}
                     {drug.drug_class && <Badge variant="secondary">{drug.drug_class}</Badge>}
                   </div>
                 </div>

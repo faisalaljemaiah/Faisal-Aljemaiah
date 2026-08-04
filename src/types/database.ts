@@ -110,22 +110,8 @@ export interface AppNotification {
   created_at: string
 }
 
-export type MedicationCategory =
-  | 'cardiology'
-  | 'oncology'
-  | 'cns'
-  | 'gastrointestinal'
-  | 'endocrine'
-  | 'infectious_diseases'
-  | 'otc'
-  | 'emergency'
-  | 'antibiotics'
-  | 'pediatrics'
-  | 'respiratory'
-  | 'renal'
-  | 'hematology'
-  | 'psychiatry'
-  | 'other'
+/** Free text — pharmacies use their own zone/category naming, so this isn't a fixed enum. */
+export type MedicationCategory = string
 
 export interface Drug {
   id: string

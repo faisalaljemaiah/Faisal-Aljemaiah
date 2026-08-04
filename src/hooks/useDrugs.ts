@@ -21,6 +21,18 @@ export function useDrugSearch(search: string, category?: MedicationCategory | 'a
   })
 }
 
+export function useDrugCategories() {
+  return useQuery({
+    queryKey: ['drugs', 'categories'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('drugs').select('category').not('category', 'is', null)
+      if (error) throw error
+      const unique = Array.from(new Set((data as { category: string }[]).map((d) => d.category))).sort()
+      return unique
+    },
+  })
+}
+
 export type DrugInput = Omit<Drug, 'id' | 'created_at' | 'updated_at' | 'created_by'>
 
 export function useCreateDrug() {

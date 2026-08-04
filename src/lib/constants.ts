@@ -1,23 +1,26 @@
-import type { MedicationCategory } from '@/types/database'
-
-export const MEDICATION_CATEGORIES: { value: MedicationCategory; label: string }[] = [
-  { value: 'cardiology', label: 'Cardiology' },
-  { value: 'oncology', label: 'Oncology' },
-  { value: 'cns', label: 'CNS' },
-  { value: 'gastrointestinal', label: 'Gastrointestinal' },
-  { value: 'endocrine', label: 'Endocrine' },
-  { value: 'infectious_diseases', label: 'Infectious Diseases' },
-  { value: 'otc', label: 'OTC' },
-  { value: 'emergency', label: 'Emergency' },
-  { value: 'antibiotics', label: 'Antibiotics' },
-  { value: 'pediatrics', label: 'Pediatrics' },
-  { value: 'respiratory', label: 'Respiratory' },
-  { value: 'renal', label: 'Renal' },
-  { value: 'hematology', label: 'Hematology' },
-  { value: 'psychiatry', label: 'Psychiatry' },
-  { value: 'other', label: 'Other' },
+/**
+ * Suggested categories shown as autocomplete hints when adding a medication.
+ * Categories are free text (see MedicationCategory) — the real filter list on
+ * the Drug Locator is derived from whatever values actually exist in the
+ * data, so a pharmacy's own zone naming (e.g. "Cardiovascular", "Topicals")
+ * works without any code changes.
+ */
+export const SUGGESTED_MEDICATION_CATEGORIES = [
+  'Cardiology',
+  'Oncology',
+  'CNS',
+  'Gastrointestinal',
+  'Endocrine',
+  'Infectious Diseases',
+  'OTC',
+  'Emergency',
+  'Antibiotics',
+  'Pediatrics',
+  'Respiratory',
+  'Renal',
+  'Hematology',
+  'Psychiatry',
+  'Topicals',
+  'Eye/Ear',
+  'Other',
 ]
-
-export function categoryLabel(value: MedicationCategory | null | undefined) {
-  return MEDICATION_CATEGORIES.find((c) => c.value === value)?.label ?? '—'
-}
