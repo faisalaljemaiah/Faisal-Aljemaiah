@@ -45,6 +45,13 @@ export function Topbar() {
         </Button>
       </Sheet>
 
+      <Link
+        to="/"
+        className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-2 lg:hidden"
+      >
+        <img src="/logo-op-square.svg" alt="OP Interns" className="h-7 w-7" />
+      </Link>
+
       <div className="flex-1" />
 
       <DropdownMenu>
