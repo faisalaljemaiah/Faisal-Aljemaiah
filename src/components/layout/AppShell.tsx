@@ -11,7 +11,7 @@ export function AppShell() {
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar />
-        <main className="relative flex-1 overflow-x-hidden px-4 pb-24 pt-6 lg:px-8 lg:pb-6">
+        <main className="relative flex-1 overflow-x-hidden px-4 pb-24 pt-6 md:px-8 md:pb-6">
           <div
             aria-hidden
             className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-72 bg-[radial-gradient(60%_100%_at_50%_0%,var(--color-primary)_0%,transparent_70%)] opacity-[0.06]"

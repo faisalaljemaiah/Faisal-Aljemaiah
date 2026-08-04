@@ -60,7 +60,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
 export function Sidebar() {
   return (
-    <aside className="hidden w-64 shrink-0 border-r border-sidebar-border lg:block">
+    <aside className="hidden w-64 shrink-0 border-r border-sidebar-border md:block">
       <div className="sticky top-0 h-svh">
         <SidebarContent />
       </div>

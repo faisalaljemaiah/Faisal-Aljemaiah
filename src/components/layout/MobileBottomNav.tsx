@@ -63,7 +63,7 @@ export function MobileBottomNav() {
   const compact = useCompactOnScroll()
 
   return (
-    <nav className="chrome-surface pb-safe fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 lg:hidden">
+    <nav className="chrome-surface pb-safe fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 md:hidden">
       <div
         className={cn(
           'flex items-stretch justify-between rounded-full border border-white/20 bg-background/40 shadow-lg backdrop-blur-2xl transition-all duration-300 ease-out-expo supports-[backdrop-filter]:bg-background/30 dark:border-white/10',

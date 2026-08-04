@@ -40,14 +40,14 @@ export function Topbar() {
           </VisuallyHidden>
           <SidebarContent onNavigate={() => setMobileOpen(false)} />
         </SheetContent>
-        <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setMobileOpen(true)}>
+        <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setMobileOpen(true)}>
           <Menu className="h-5 w-5" />
         </Button>
       </Sheet>
 
       <Link
         to="/"
-        className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-2 lg:hidden"
+        className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-2 md:hidden"
       >
         <img src="/logo-op-square.svg" alt="OP Interns" className="h-7 w-7" />
       </Link>
