@@ -89,6 +89,26 @@ export function useSubmitCounselingAttempt() {
   })
 }
 
+export interface CounselingChatTurn {
+  role: 'user' | 'model'
+  text: string
+}
+
+export function useCounselingChatReply() {
+  return useMutation({
+    mutationFn: async (input: {
+      case: Pick<CounselingCase, 'patient_name' | 'patient_age' | 'patient_gender' | 'medication' | 'scenario'>
+      history: CounselingChatTurn[]
+      message: string
+    }) => {
+      const { data, error } = await supabase.functions.invoke('counseling-chat', { body: input })
+      if (error) throw error
+      if (data?.error) throw new Error(data.error)
+      return data.reply as string
+    },
+  })
+}
+
 export type CounselingQuestionInput = {
   question: string
   choices: string[]

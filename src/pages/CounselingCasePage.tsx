@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useCounselingCase, useSubmitCounselingAttempt } from '@/hooks/useCounseling'
+import { PatientChat } from '@/components/PatientChat'
 import { toast } from 'sonner'
 import type { CaseDifficulty } from '@/types/database'
 
@@ -121,6 +122,8 @@ export default function CounselingCasePage() {
               )}
             </CardContent>
           </Card>
+
+          <PatientChat case={c} />
 
           {c.questions.length > 0 && (
             <Card>
