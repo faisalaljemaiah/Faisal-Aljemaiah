@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { AlertTriangle, MapPinned, Search, Snowflake, ShieldAlert } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
+import { Reveal } from '@/components/Reveal'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -63,8 +64,9 @@ export default function DrugLocatorPage() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {(drugs ?? []).map((drug) => (
-            <Card key={drug.id} className="overflow-hidden">
+          {(drugs ?? []).map((drug, i) => (
+            <Reveal key={drug.id} delay={Math.min(i, 8) * 40}>
+            <Card className="overflow-hidden">
               {drug.image_urls[0] && (
                 <img src={drug.image_urls[0]} alt={drug.generic_name} className="h-32 w-full object-cover" />
               )}
@@ -117,6 +119,7 @@ export default function DrugLocatorPage() {
                 {drug.notes && <p className="text-xs text-muted-foreground">{drug.notes}</p>}
               </CardContent>
             </Card>
+            </Reveal>
           ))}
         </div>
       )}

@@ -11,6 +11,7 @@ import {
   CheckCircle2,
 } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
+import { Reveal } from '@/components/Reveal'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -59,7 +60,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
           {/* Today's activities */}
-          <Card>
+          <Reveal><Card>
             <CardHeader className="flex-row items-center justify-between space-y-0">
               <CardTitle>Today&apos;s Activities</CardTitle>
               <Button variant="ghost" size="sm" asChild>
@@ -95,10 +96,10 @@ export default function DashboardPage() {
                 ))
               )}
             </CardContent>
-          </Card>
+          </Card></Reveal>
 
           {/* Upcoming shifts */}
-          <Card>
+          <Reveal delay={70}><Card>
             <CardHeader>
               <CardTitle>Upcoming Shifts</CardTitle>
             </CardHeader>
@@ -123,10 +124,10 @@ export default function DashboardPage() {
                 ))
               )}
             </CardContent>
-          </Card>
+          </Card></Reveal>
 
           {/* Drug of the Day */}
-          <Card>
+          <Reveal delay={140}><Card>
             <CardHeader className="flex-row items-center justify-between space-y-0">
               <CardTitle className="flex items-center gap-2">
                 <Pill className="h-4 w-4 text-primary" /> Drug of the Day
@@ -152,12 +153,12 @@ export default function DashboardPage() {
                 </div>
               )}
             </CardContent>
-          </Card>
+          </Card></Reveal>
         </div>
 
         <div className="space-y-4">
           {/* Quick actions */}
-          <Card>
+          <Reveal><Card>
             <CardHeader>
               <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
@@ -173,10 +174,10 @@ export default function DashboardPage() {
                 </Link>
               ))}
             </CardContent>
-          </Card>
+          </Card></Reveal>
 
           {/* Leaderboard preview */}
-          <Card>
+          <Reveal delay={70}><Card>
             <CardHeader className="flex-row items-center justify-between space-y-0">
               <CardTitle className="flex items-center gap-2">
                 <Trophy className="h-4 w-4 text-primary" /> Weekly Leaders
@@ -219,10 +220,10 @@ export default function DashboardPage() {
                 </>
               )}
             </CardContent>
-          </Card>
+          </Card></Reveal>
 
           {/* Announcements */}
-          <Card>
+          <Reveal delay={140}><Card>
             <CardHeader className="flex-row items-center justify-between space-y-0">
               <CardTitle className="flex items-center gap-2">
                 <Megaphone className="h-4 w-4 text-primary" /> Announcements
@@ -257,10 +258,10 @@ export default function DashboardPage() {
                 ))
               )}
             </CardContent>
-          </Card>
+          </Card></Reveal>
 
           {profile && profile.points > 0 && (
-            <Card className="bg-accent/40">
+            <Reveal delay={210}><Card className="bg-accent/40">
               <CardContent className="flex items-center gap-3 py-4">
                 <CheckCircle2 className="h-8 w-8 text-primary" />
                 <div>
@@ -268,7 +269,7 @@ export default function DashboardPage() {
                   <p className="text-xs text-muted-foreground">Keep completing activities to climb the leaderboard.</p>
                 </div>
               </CardContent>
-            </Card>
+            </Card></Reveal>
           )}
         </div>
       </div>

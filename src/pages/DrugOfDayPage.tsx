@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { CheckCircle2, Pill, Sparkles } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
+import { Reveal } from '@/components/Reveal'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -81,7 +82,7 @@ export default function DrugOfDayPage() {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
-          <Card>
+          <Reveal><Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-xl">
                 <Pill className="h-5 w-5 text-primary" /> {drug.drug_name}
@@ -99,10 +100,10 @@ export default function DrugOfDayPage() {
               <Section title="Contraindications" content={drug.contraindications} />
               <Section title="Counseling Points" content={drug.counseling_points} />
             </CardContent>
-          </Card>
+          </Card></Reveal>
 
           {drug.questions.length > 0 && (
-            <Card>
+            <Reveal delay={80}><Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-primary" /> Knowledge Check
@@ -152,11 +153,11 @@ export default function DrugOfDayPage() {
                   </>
                 )}
               </CardContent>
-            </Card>
+            </Card></Reveal>
           )}
         </div>
 
-        <Card>
+        <Reveal delay={40}><Card>
           <CardHeader>
             <CardTitle>Recent History</CardTitle>
           </CardHeader>
@@ -172,7 +173,7 @@ export default function DrugOfDayPage() {
               ))}
             {(history ?? []).length <= 1 && <p className="text-sm text-muted-foreground">No past entries yet.</p>}
           </CardContent>
-        </Card>
+        </Card></Reveal>
       </div>
     </div>
   )

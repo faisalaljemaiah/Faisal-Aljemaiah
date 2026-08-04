@@ -12,6 +12,7 @@ import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useCounselingCase, useSubmitCounselingAttempt } from '@/hooks/useCounseling'
 import { PatientChat } from '@/components/PatientChat'
+import { Reveal } from '@/components/Reveal'
 import { toast } from 'sonner'
 import type { CaseDifficulty } from '@/types/database'
 
@@ -107,7 +108,7 @@ export default function CounselingCasePage() {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
-          <Card>
+          <Reveal><Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
                 <User className="h-4 w-4 text-primary" /> Patient: {c.patient_name}
@@ -128,9 +129,9 @@ export default function CounselingCasePage() {
                 </div>
               )}
             </CardContent>
-          </Card>
+          </Card></Reveal>
 
-          <PatientChat case={c} />
+          <Reveal delay={70}><PatientChat case={c} /></Reveal>
 
           {c.questions.length > 0 && (
             <Card>

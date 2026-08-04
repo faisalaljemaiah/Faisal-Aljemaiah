@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { LogIn, LogOut, MapPin } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
+import { Reveal } from '@/components/Reveal'
 import { ScheduleCalendar } from '@/components/ScheduleCalendar'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -54,7 +55,7 @@ export default function SchedulePage() {
       <PageHeader title="Schedule" description="Your rotation calendar, shift assignments, and attendance." />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-1">
+        <Reveal className="lg:col-span-1"><Card>
           <CardContent className="pt-5">
             {isLoading ? (
               <Skeleton className="h-72 w-full" />
@@ -62,9 +63,9 @@ export default function SchedulePage() {
               <ScheduleCalendar assignments={assignments ?? []} selectedDate={selectedDate} onSelectDate={setSelectedDate} />
             )}
           </CardContent>
-        </Card>
+        </Card></Reveal>
 
-        <Card className="lg:col-span-2">
+        <Reveal delay={70} className="lg:col-span-2"><Card>
           <CardHeader>
             <CardTitle>
               {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
@@ -112,10 +113,10 @@ export default function SchedulePage() {
               ))
             )}
           </CardContent>
-        </Card>
+        </Card></Reveal>
       </div>
 
-      <Card className="mt-4">
+      <Reveal delay={140}><Card className="mt-4">
         <CardHeader>
           <CardTitle>Active Rotations</CardTitle>
         </CardHeader>
@@ -131,7 +132,7 @@ export default function SchedulePage() {
             </div>
           ))}
         </CardContent>
-      </Card>
+      </Card></Reveal>
     </div>
   )
 }

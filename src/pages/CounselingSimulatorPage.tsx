@@ -2,6 +2,7 @@ import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { MessagesSquare, User, Clock, History, Sparkles } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
+import { Reveal } from '@/components/Reveal'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -54,8 +55,9 @@ export default function CounselingSimulatorPage() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((c) => (
-            <Card key={c.id}>
+          {filtered.map((c, i) => (
+            <Reveal key={c.id} delay={Math.min(i, 8) * 40}>
+            <Card>
               <CardHeader className="space-y-2">
                 <div className="flex items-start justify-between gap-2">
                   <CardTitle className="text-base">{c.title}</CardTitle>
@@ -91,6 +93,7 @@ export default function CounselingSimulatorPage() {
                 </div>
               </CardContent>
             </Card>
+            </Reveal>
           ))}
         </div>
       )}

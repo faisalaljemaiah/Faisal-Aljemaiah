@@ -90,7 +90,7 @@ export function ScheduleCalendar({
               key={i}
               onClick={() => onSelectDate(date)}
               className={cn(
-                'flex aspect-square flex-col items-center justify-start gap-0.5 rounded-lg border p-1 text-xs transition-colors hover:bg-accent',
+                'flex aspect-square min-h-10 flex-col items-center justify-start gap-0.5 rounded-lg border p-1 text-xs transition-[background-color,border-color,transform] duration-150 ease-out-expo hover:bg-accent active:scale-95',
                 isSelected && 'border-primary bg-accent',
                 isToday && !isSelected && 'border-primary/50'
               )}
