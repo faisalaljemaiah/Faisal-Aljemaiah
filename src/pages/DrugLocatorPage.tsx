@@ -87,9 +87,9 @@ export default function DrugLocatorPage() {
                   <div>
                     <p className="font-medium">{drug.storage_room}</p>
                     <p className="text-xs text-muted-foreground">
-                      {[drug.storage_shelf && `Shelf ${drug.storage_shelf}`, drug.storage_bin && `Bin ${drug.storage_bin}`]
+                      {[drug.storage_shelf && `Shelf ${drug.storage_shelf}`, drug.storage_bin && `Column ${drug.storage_bin}`]
                         .filter(Boolean)
-                        .join(' · ') || 'No shelf/bin details'}
+                        .join(' · ') || 'No shelf/column details'}
                     </p>
                   </div>
                 </div>

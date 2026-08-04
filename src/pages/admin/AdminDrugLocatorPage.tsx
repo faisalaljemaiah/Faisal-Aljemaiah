@@ -224,7 +224,7 @@ export default function AdminDrugLocatorPage() {
                     <TableCell>
                       {d.storage_room}
                       {d.storage_shelf ? ` · Shelf ${d.storage_shelf}` : ''}
-                      {d.storage_bin ? ` · Bin ${d.storage_bin}` : ''}
+                      {d.storage_bin ? ` · Column ${d.storage_bin}` : ''}
                     </TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="icon" onClick={() => openEdit(d)}>
@@ -292,7 +292,7 @@ export default function AdminDrugLocatorPage() {
                 <Input value={form.storage_shelf} onChange={(e) => setForm({ ...form, storage_shelf: e.target.value })} />
               </div>
               <div className="space-y-2">
-                <Label>Bin</Label>
+                <Label>Column</Label>
                 <Input value={form.storage_bin} onChange={(e) => setForm({ ...form, storage_bin: e.target.value })} />
               </div>
             </div>
@@ -542,7 +542,7 @@ function BulkImportDialog() {
                         <TableCell>
                           {r.storage_room}
                           {r.storage_shelf ? ` · Shelf ${r.storage_shelf}` : ''}
-                          {r.storage_bin ? ` · Bin ${r.storage_bin}` : ''}
+                          {r.storage_bin ? ` · Column ${r.storage_bin}` : ''}
                         </TableCell>
                       </TableRow>
                     ))}
