@@ -15,4 +15,11 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     detectSessionInUrl: true,
   },
+  global: {
+    // The browser's HTTP cache can otherwise serve a stale GET response for
+    // a query URL repeated shortly after a write to the same rows (e.g. a
+    // refetch right after a save), even though React Query itself always
+    // asks for fresh data.
+    fetch: (input, init) => fetch(input, { ...init, cache: 'no-store' }),
+  },
 })
