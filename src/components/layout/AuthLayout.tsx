@@ -1,5 +1,5 @@
-import { Cross, ShieldCheck, GraduationCap, Activity } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { ShieldCheck, GraduationCap, Activity } from 'lucide-react'
+import type { ComponentType, ReactNode } from 'react'
 
 export function AuthLayout({ children, title, subtitle }: { children: ReactNode; title: string; subtitle: string }) {
   return (
@@ -11,8 +11,8 @@ export function AuthLayout({ children, title, subtitle }: { children: ReactNode;
         </div>
 
         <div className="relative flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/15">
-            <Cross className="h-5 w-5" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5">
+            <img src="/logo-op-square.svg" alt="" className="h-full w-full" />
           </div>
           <span className="text-lg font-semibold">OP Interns</span>
         </div>
@@ -50,7 +50,7 @@ export function AuthLayout({ children, title, subtitle }: { children: ReactNode;
   )
 }
 
-function Feature({ icon: Icon, label }: { icon: typeof Cross; label: string }) {
+function Feature({ icon: Icon, label }: { icon: ComponentType<{ className?: string }>; label: string }) {
   return (
     <div className="flex flex-col items-start gap-2 rounded-lg bg-white/10 p-3">
       <Icon className="h-5 w-5" />

@@ -1,5 +1,4 @@
 import { NavLink } from 'react-router-dom'
-import { Cross } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { mainNavItems, adminNavItems } from './nav-items'
 import { useAuth } from '@/contexts/AuthContext'
@@ -10,9 +9,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
       <div className="flex h-14 items-center gap-2 border-b border-sidebar-border px-5">
-        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <Cross className="h-4 w-4" />
-        </div>
+        <img src="/logo-op-square.svg" alt="OP Interns" className="h-7 w-7" />
         <span className="text-base font-semibold tracking-tight">OP Interns</span>
       </div>
 
