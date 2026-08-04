@@ -39,7 +39,12 @@ export function AuthLayout({ children, title, subtitle }: { children: ReactNode;
 
       <div className="flex items-center justify-center p-6 sm:p-10">
         <div className="w-full max-w-sm space-y-6">
-          <div className="space-y-1.5 text-center lg:text-left">
+          <div className="flex justify-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl border bg-white p-2.5 shadow-glow">
+              <img src="/logo-op-square.svg" alt="OP Interns" className="h-full w-full" />
+            </div>
+          </div>
+          <div className="space-y-1.5 text-center">
             <h2 className="text-2xl font-semibold tracking-tight">{title}</h2>
             <p className="text-sm text-muted-foreground">{subtitle}</p>
           </div>

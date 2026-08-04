@@ -79,7 +79,7 @@ export default function DashboardPage() {
                 today.map((a) => (
                   <div key={a.id} className="flex items-center justify-between rounded-lg border p-3">
                     <div className="flex items-center gap-3">
-                      <div className={cn('flex h-9 w-9 items-center justify-center rounded-lg', featureColors.schedule.chip)}>
+                      <div className={cn('flex h-9 w-9 items-center justify-center rounded-lg', featureColors.home.chip)}>
                         <CalendarClock className="h-4 w-4" />
                       </div>
                       <div>
