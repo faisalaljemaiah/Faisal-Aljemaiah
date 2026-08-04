@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Pill,
@@ -17,14 +18,14 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useAuth } from '@/contexts/AuthContext'
-import { useMyScheduleEntries } from '@/hooks/useSchedule'
+import { useMyScheduleEntries, useScheduleCodeTypes } from '@/hooks/useSchedule'
 import { useTodaysDrug } from '@/hooks/useDrugOfDay'
 import { useAnnouncements } from '@/hooks/useAnnouncements'
 import { useLeaderboard } from '@/hooks/useLeaderboard'
 import { addDays, dateKey } from '@/lib/scheduleDates'
-import { scheduleCodeMeta, scheduleCodeText } from '@/lib/scheduleCodes'
 import { getInitials, cn } from '@/lib/utils'
 import { featureColors } from '@/lib/featureColors'
+import type { ScheduleCodeType } from '@/types/database'
 
 const quickActions = [
   { label: 'Take Drug Quiz', href: '/drug-of-the-day', icon: Pill, colorKey: 'drugOfDay' as const },
@@ -37,9 +38,18 @@ export default function DashboardPage() {
   const { profile } = useAuth()
   const now = new Date()
   const { data: entries, isLoading: scheduleLoading } = useMyScheduleEntries(now, addDays(now, 13))
+  const { data: codeTypes, isLoading: codesLoading } = useScheduleCodeTypes()
   const { data: drugOfDay, isLoading: drugLoading } = useTodaysDrug()
   const { data: announcements, isLoading: announcementsLoading } = useAnnouncements(4)
   const { data: leaderboard, isLoading: leaderboardLoading } = useLeaderboard('weekly')
+
+  const codeByKey = useMemo(() => {
+    const map = new Map<string, ScheduleCodeType>()
+    for (const ct of codeTypes ?? []) map.set(ct.code, ct)
+    return map
+  }, [codeTypes])
+
+  const scheduleLoadingAll = scheduleLoading || codesLoading
 
   const todayKey = dateKey(now)
   const todayEntry = (entries ?? []).find((e) => e.date === todayKey)
@@ -70,7 +80,7 @@ export default function DashboardPage() {
               </Button>
             </CardHeader>
             <CardContent className="space-y-3">
-              {scheduleLoading ? (
+              {scheduleLoadingAll ? (
                 <Skeleton className="h-16 w-full" />
               ) : !todayEntry ? (
                 <p className="text-sm text-muted-foreground">No activity scheduled for today. Enjoy the downtime!</p>
@@ -83,10 +93,10 @@ export default function DashboardPage() {
                         featureColors.home.chip
                       )}
                     >
-                      {scheduleCodeText(todayEntry.code)}
+                      {codeByKey.get(todayEntry.code)?.short_label ?? todayEntry.code}
                     </div>
                     <div>
-                      <p className="text-sm font-medium">{scheduleCodeMeta[todayEntry.code].label}</p>
+                      <p className="text-sm font-medium">{codeByKey.get(todayEntry.code)?.label ?? todayEntry.code}</p>
                       <p className="text-xs text-muted-foreground">
                         {now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                       </p>
@@ -103,7 +113,7 @@ export default function DashboardPage() {
               <CardTitle>Upcoming Schedule</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {scheduleLoading ? (
+              {scheduleLoadingAll ? (
                 <Skeleton className="h-24 w-full" />
               ) : upcoming.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No upcoming activities assigned yet.</p>
@@ -111,13 +121,13 @@ export default function DashboardPage() {
                 upcoming.map((e) => (
                   <div key={e.id} className="flex items-center justify-between rounded-lg border p-3">
                     <div>
-                      <p className="text-sm font-medium">{scheduleCodeMeta[e.code].label}</p>
+                      <p className="text-sm font-medium">{codeByKey.get(e.code)?.label ?? e.code}</p>
                       <p className="text-xs text-muted-foreground">
                         {new Date(`${e.date}T00:00:00`).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
                       </p>
                     </div>
                     <Badge variant="outline" className="capitalize">
-                      {scheduleCodeText(e.code)}
+                      {codeByKey.get(e.code)?.short_label ?? e.code}
                     </Badge>
                   </div>
                 ))

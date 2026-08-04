@@ -2,7 +2,59 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { dateKey } from '@/lib/scheduleDates'
-import type { ScheduleCode, ScheduleEntry } from '@/types/database'
+import type { ScheduleColorKey } from '@/lib/scheduleCodes'
+import type { ScheduleCodeType, ScheduleEntry } from '@/types/database'
+
+export function useScheduleCodeTypes() {
+  return useQuery({
+    queryKey: ['schedule-code-types'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('schedule_code_types').select('*').order('sort_order', { ascending: true })
+      if (error) throw error
+      return data as ScheduleCodeType[]
+    },
+  })
+}
+
+export function useCreateScheduleCodeType() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({
+      code,
+      label,
+      color,
+      sortOrder,
+      createdBy,
+    }: {
+      code: string
+      label: string
+      color: ScheduleColorKey
+      sortOrder: number
+      createdBy: string
+    }) => {
+      const { error } = await supabase
+        .from('schedule_code_types')
+        .insert({ code, short_label: code, label, color, sort_order: sortOrder, created_by: createdBy })
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['schedule-code-types'] })
+    },
+  })
+}
+
+export function useDeleteScheduleCodeType() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (code: string) => {
+      const { error } = await supabase.from('schedule_code_types').delete().eq('code', code)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['schedule-code-types'] })
+    },
+  })
+}
 
 export function useMyScheduleEntries(startDate: Date, endDate: Date) {
   const { user } = useAuth()
@@ -52,7 +104,7 @@ export function useSetScheduleEntry() {
     }: {
       userId: string
       date: Date
-      code: ScheduleCode | null
+      code: string | null
       createdBy: string
     }) => {
       if (code === null) {

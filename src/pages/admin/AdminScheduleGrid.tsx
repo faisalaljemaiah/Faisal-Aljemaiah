@@ -8,17 +8,19 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Popover, PopoverClose, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { useAuth } from '@/contexts/AuthContext'
 import { useInterns } from '@/hooks/useProfiles'
-import { useAllScheduleEntries, useSetScheduleEntry } from '@/hooks/useSchedule'
+import { useAllScheduleEntries, useScheduleCodeTypes, useSetScheduleEntry } from '@/hooks/useSchedule'
 import { addDays, dateKey, workWeeks } from '@/lib/scheduleDates'
-import { SCHEDULE_CODES, scheduleCodeMeta, scheduleCodeText } from '@/lib/scheduleCodes'
+import { scheduleCellClasses, scheduleSwatchClasses } from '@/lib/scheduleCodes'
 import { cn, getInitials } from '@/lib/utils'
-import type { ScheduleCode, ScheduleEntry } from '@/types/database'
+import type { ScheduleCodeType, ScheduleEntry } from '@/types/database'
+import { ManageScheduleCodesDialog } from './ManageScheduleCodesDialog'
 
 const WEEK_COUNT = 4
 
 export default function AdminScheduleGrid() {
   const { profile } = useAuth()
   const { data: interns, isLoading: internsLoading } = useInterns()
+  const { data: codeTypes, isLoading: codesLoading } = useScheduleCodeTypes()
   const setEntry = useSetScheduleEntry()
 
   const [search, setSearch] = React.useState('')
@@ -30,6 +32,12 @@ export default function AdminScheduleGrid() {
 
   const { data: entries, isLoading: entriesLoading } = useAllScheduleEntries(rangeStart, rangeEnd)
 
+  const codeByKey = React.useMemo(() => {
+    const map = new Map<string, ScheduleCodeType>()
+    for (const ct of codeTypes ?? []) map.set(ct.code, ct)
+    return map
+  }, [codeTypes])
+
   const entryByCell = React.useMemo(() => {
     const map = new Map<string, ScheduleEntry>()
     for (const e of entries ?? []) {
@@ -40,7 +48,7 @@ export default function AdminScheduleGrid() {
 
   const filteredInterns = (interns ?? []).filter((i) => i.full_name.toLowerCase().includes(search.toLowerCase()))
 
-  async function handlePick(userId: string, date: Date, code: ScheduleCode | null) {
+  async function handlePick(userId: string, date: Date, code: string | null) {
     if (!profile) return
     try {
       await setEntry.mutateAsync({ userId, date, code, createdBy: profile.id })
@@ -48,6 +56,8 @@ export default function AdminScheduleGrid() {
       toast.error('Could not save that day', { description: (e as Error).message })
     }
   }
+
+  const loading = internsLoading || entriesLoading || codesLoading
 
   return (
     <div className="space-y-4">
@@ -70,18 +80,21 @@ export default function AdminScheduleGrid() {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
-        {SCHEDULE_CODES.map((code) => (
-          <span key={code} className="flex items-center gap-1.5">
-            <span className={cn('h-3 w-3 rounded-sm', scheduleCodeMeta[code].swatch)} />
-            {scheduleCodeText(code)} — {scheduleCodeMeta[code].label}
-          </span>
-        ))}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
+          {(codeTypes ?? []).map((ct) => (
+            <span key={ct.code} className="flex items-center gap-1.5">
+              <span className={cn('h-3 w-3 rounded-sm', scheduleSwatchClasses(ct.color))} />
+              {ct.short_label} — {ct.label}
+            </span>
+          ))}
+        </div>
+        <ManageScheduleCodesDialog />
       </div>
 
       <Card>
         <CardContent className="pt-5">
-          {internsLoading || entriesLoading ? (
+          {loading ? (
             <Skeleton className="h-96 w-full" />
           ) : filteredInterns.length === 0 ? (
             <p className="py-10 text-center text-sm text-muted-foreground">No trainees found.</p>
@@ -134,7 +147,7 @@ export default function AdminScheduleGrid() {
                       {weeks.map((week) =>
                         week.map((day) => {
                           const entry = entryByCell.get(`${intern.id}_${dateKey(day)}`)
-                          const meta = entry ? scheduleCodeMeta[entry.code] : null
+                          const ct = entry ? codeByKey.get(entry.code) : undefined
                           return (
                             <td key={day.toISOString()} className="w-14 min-w-14 border-b p-0.5">
                               <Popover>
@@ -142,25 +155,25 @@ export default function AdminScheduleGrid() {
                                   <button
                                     className={cn(
                                       'flex h-9 w-full items-center justify-center rounded-md border text-[11px] font-semibold transition-colors',
-                                      meta ? meta.cell : 'border-dashed text-muted-foreground hover:bg-accent'
+                                      ct ? scheduleCellClasses(ct.color) : 'border-dashed text-muted-foreground hover:bg-accent'
                                     )}
                                   >
-                                    {entry ? scheduleCodeText(entry.code) : ''}
+                                    {ct?.short_label ?? ''}
                                   </button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-56 p-2" align="center">
                                   <div className="grid grid-cols-4 gap-1.5">
-                                    {SCHEDULE_CODES.map((code) => (
-                                      <PopoverClose asChild key={code}>
+                                    {(codeTypes ?? []).map((option) => (
+                                      <PopoverClose asChild key={option.code}>
                                         <button
-                                          onClick={() => handlePick(intern.id, day, code)}
+                                          onClick={() => handlePick(intern.id, day, option.code)}
                                           className={cn(
                                             'flex h-9 flex-col items-center justify-center rounded-md border text-[11px] font-semibold transition-transform active:scale-95',
-                                            scheduleCodeMeta[code].cell
+                                            scheduleCellClasses(option.color)
                                           )}
-                                          title={scheduleCodeMeta[code].label}
+                                          title={option.label}
                                         >
-                                          {scheduleCodeText(code)}
+                                          {option.short_label}
                                         </button>
                                       </PopoverClose>
                                     ))}

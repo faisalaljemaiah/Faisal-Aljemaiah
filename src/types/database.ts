@@ -1,7 +1,5 @@
 export type UserRole = 'admin' | 'preceptor' | 'intern'
 
-export type ScheduleCode = 'OP1' | 'OP2' | 'OP3' | 'COMP' | 'DC' | 'CON' | 'PPT' | 'SURPRISE'
-
 export type AnnouncementPriority = 'low' | 'normal' | 'high' | 'urgent'
 
 export type ReflectionStatus = 'draft' | 'submitted' | 'reviewed'
@@ -38,11 +36,21 @@ export interface ScheduleEntry {
   id: string
   user_id: string
   date: string
-  code: ScheduleCode
+  code: string
   created_by: string | null
   created_at: string
   updated_at: string
   user?: Profile
+}
+
+export interface ScheduleCodeType {
+  code: string
+  short_label: string
+  label: string
+  color: string
+  sort_order: number
+  created_by: string | null
+  created_at: string
 }
 
 export interface Announcement {
