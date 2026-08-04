@@ -49,6 +49,7 @@ export interface ScheduleCodeType {
   label: string
   color: string
   sort_order: number
+  rotates: boolean
   created_by: string | null
   created_at: string
 }

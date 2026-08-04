@@ -14,6 +14,7 @@ import { scheduleCellClasses, scheduleSwatchClasses } from '@/lib/scheduleCodes'
 import { cn, getInitials } from '@/lib/utils'
 import type { ScheduleCodeType, ScheduleEntry } from '@/types/database'
 import { ManageScheduleCodesDialog } from './ManageScheduleCodesDialog'
+import { GenerateScheduleButton } from './GenerateScheduleButton'
 
 const WEEK_COUNT = 4
 
@@ -89,7 +90,16 @@ export default function AdminScheduleGrid() {
             </span>
           ))}
         </div>
-        <ManageScheduleCodesDialog />
+        <div className="flex items-center gap-2">
+          <GenerateScheduleButton
+            interns={interns ?? []}
+            codeTypes={codeTypes ?? []}
+            weeks={weeks}
+            entries={entries ?? []}
+            rangeLabel={`${rangeStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${rangeEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`}
+          />
+          <ManageScheduleCodesDialog />
+        </div>
       </div>
 
       <Card>

@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { dateKey } from '@/lib/scheduleDates'
 import type { ScheduleColorKey } from '@/lib/scheduleCodes'
+import type { GeneratedRow } from '@/lib/scheduleGenerate'
 import type { ScheduleCodeType, ScheduleEntry } from '@/types/database'
 
 export function useScheduleCodeTypes() {
@@ -24,17 +25,19 @@ export function useCreateScheduleCodeType() {
       label,
       color,
       sortOrder,
+      rotates,
       createdBy,
     }: {
       code: string
       label: string
       color: ScheduleColorKey
       sortOrder: number
+      rotates: boolean
       createdBy: string
     }) => {
       const { error } = await supabase
         .from('schedule_code_types')
-        .insert({ code, short_label: code, label, color, sort_order: sortOrder, created_by: createdBy })
+        .insert({ code, short_label: code, label, color, sort_order: sortOrder, rotates, created_by: createdBy })
       if (error) throw error
     },
     onSuccess: () => {
@@ -119,6 +122,20 @@ export function useSetScheduleEntry() {
       const { error } = await supabase
         .from('schedule_entries')
         .upsert({ user_id: userId, date: dateKey(date), code, created_by: createdBy }, { onConflict: 'user_id,date' })
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['schedule-entries'] })
+    },
+  })
+}
+
+export function useBulkSetScheduleEntries() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (rows: GeneratedRow[]) => {
+      if (rows.length === 0) return
+      const { error } = await supabase.from('schedule_entries').upsert(rows, { onConflict: 'user_id,date' })
       if (error) throw error
     },
     onSuccess: () => {
