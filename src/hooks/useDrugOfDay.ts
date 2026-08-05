@@ -21,6 +21,9 @@ export function useTodaysDrug() {
   })
 }
 
+// Includes upcoming (not just past) entries — needed both to show admins
+// what's already scheduled and to know which dates bulk-imported drugs
+// should skip.
 export function useDrugOfDayHistory() {
   return useQuery({
     queryKey: ['drug-of-day', 'history'],
@@ -28,9 +31,8 @@ export function useDrugOfDayHistory() {
       const { data, error } = await supabase
         .from('drug_of_day')
         .select('*')
-        .lte('publish_date', new Date().toISOString().slice(0, 10))
         .order('publish_date', { ascending: false })
-        .limit(30)
+        .limit(90)
       if (error) throw error
       return data as DrugOfDay[]
     },
@@ -107,6 +109,37 @@ export function useCreateDrugOfDay() {
         if (qError) throw qError
       }
       return drug as DrugOfDay
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['drug-of-day'] }),
+  })
+}
+
+export interface DrugOfDayImportRow {
+  drug_name: string
+  generic_name?: string
+  drug_class?: string
+  mechanism: string
+  indications: string
+  contraindications: string
+  counseling_points: string
+}
+
+export function useBulkImportDrugsOfDay() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({
+      rows,
+      publishDates,
+      created_by,
+    }: {
+      rows: DrugOfDayImportRow[]
+      publishDates: string[]
+      created_by: string
+    }) => {
+      const payload = rows.map((row, idx) => ({ ...row, publish_date: publishDates[idx], created_by }))
+      const { error } = await supabase.from('drug_of_day').insert(payload)
+      if (error) throw error
+      return payload.length
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['drug-of-day'] }),
   })
