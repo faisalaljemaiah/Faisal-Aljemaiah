@@ -2,6 +2,7 @@ import { Outlet, useLocation } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
 import { MobileBottomNav } from './MobileBottomNav'
+import { OpAiChat } from '@/components/OpAiChat'
 
 export function AppShell() {
   const location = useLocation()
@@ -24,6 +25,7 @@ export function AppShell() {
         </main>
         <MobileBottomNav />
       </div>
+      <OpAiChat />
     </div>
   )
 }
