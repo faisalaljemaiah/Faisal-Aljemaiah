@@ -3,7 +3,12 @@ import type { ComponentType, ReactNode } from 'react'
 
 export function AuthLayout({ children, title, subtitle }: { children: ReactNode; title: string; subtitle: string }) {
   return (
-    <div className="grid min-h-svh lg:grid-cols-2">
+    <div className="relative grid min-h-svh overflow-hidden bg-[oklch(0.32_0.09_162)] lg:grid-cols-2 lg:bg-background">
+      <div className="pointer-events-none absolute inset-0 opacity-10 lg:hidden">
+        <div className="absolute -left-24 -top-24 h-96 w-96 rounded-full bg-white blur-3xl" />
+        <div className="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-white blur-3xl" />
+      </div>
+
       <div className="relative hidden flex-col justify-between overflow-hidden bg-[oklch(0.32_0.09_162)] p-10 text-white lg:flex">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute -left-24 -top-24 h-96 w-96 rounded-full bg-white blur-3xl" />
@@ -37,15 +42,15 @@ export function AuthLayout({ children, title, subtitle }: { children: ReactNode;
         </p>
       </div>
 
-      <div className="flex items-center justify-center p-6 sm:p-10">
-        <div className="w-full max-w-sm space-y-6">
+      <div className="relative flex items-center justify-center p-6 sm:p-10">
+        <div className="auth-card-mobile w-full max-w-sm space-y-6 rounded-2xl bg-white p-6 shadow-xl lg:rounded-none lg:bg-transparent lg:p-0 lg:shadow-none">
           <div className="flex justify-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl border bg-white p-2.5 shadow-glow">
               <img src="/logo-op-square.svg" alt="OP Interns" className="h-full w-full" />
             </div>
           </div>
           <div className="space-y-1.5 text-center">
-            <h2 className="text-2xl font-semibold tracking-tight">{title}</h2>
+            <h2 className="text-2xl font-semibold tracking-tight text-foreground">{title}</h2>
             <p className="text-sm text-muted-foreground">{subtitle}</p>
           </div>
           {children}

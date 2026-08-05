@@ -167,6 +167,59 @@
   --sidebar-border: hsl(215 20% 20%);
 }
 
+/* The auth pages float a white card on a green background on mobile only
+   (see AuthLayout) — force it to light-mode colors regardless of the site
+   theme, since a dark-mode card there would put dark inputs on white. Above
+   the lg breakpoint the card has no visible surface, so this is a no-op. */
+@media (max-width: 1023.98px) {
+  /* Tailwind's bg-, text-, and border- utilities read the --color-* aliases
+     below (each declared once at :root as e.g. --color-background:
+     var(--background)) — overriding only --background here wouldn't work,
+     since that var() is resolved once at :root and the result inherited
+     down as a fixed value, not re-resolved per element. */
+  .auth-card-mobile {
+    --background: hsl(210 40% 98%);
+    --foreground: hsl(215 28% 17%);
+    --card: hsl(0 0% 100%);
+    --card-foreground: hsl(215 28% 17%);
+    --popover: hsl(0 0% 100%);
+    --popover-foreground: hsl(215 28% 17%);
+    --primary: hsl(165 100% 25%);
+    --primary-foreground: hsl(0 0% 100%);
+    --secondary: hsl(165 60% 94%);
+    --secondary-foreground: hsl(165 100% 18%);
+    --muted: hsl(210 30% 95%);
+    --muted-foreground: hsl(215 16% 47%);
+    --accent: hsl(165 60% 94%);
+    --accent-foreground: hsl(165 100% 18%);
+    --destructive: hsl(0 84% 60%);
+    --destructive-foreground: hsl(0 0% 100%);
+    --border: hsl(214 29% 91%);
+    --input: hsl(214 29% 91%);
+    --ring: hsl(165 100% 25%);
+
+    --color-background: hsl(210 40% 98%);
+    --color-foreground: hsl(215 28% 17%);
+    --color-card: hsl(0 0% 100%);
+    --color-card-foreground: hsl(215 28% 17%);
+    --color-popover: hsl(0 0% 100%);
+    --color-popover-foreground: hsl(215 28% 17%);
+    --color-primary: hsl(165 100% 25%);
+    --color-primary-foreground: hsl(0 0% 100%);
+    --color-secondary: hsl(165 60% 94%);
+    --color-secondary-foreground: hsl(165 100% 18%);
+    --color-muted: hsl(210 30% 95%);
+    --color-muted-foreground: hsl(215 16% 47%);
+    --color-accent: hsl(165 60% 94%);
+    --color-accent-foreground: hsl(165 100% 18%);
+    --color-destructive: hsl(0 84% 60%);
+    --color-destructive-foreground: hsl(0 0% 100%);
+    --color-border: hsl(214 29% 91%);
+    --color-input: hsl(214 29% 91%);
+    --color-ring: hsl(165 100% 25%);
+  }
+}
+
 @layer base {
   * {
     @apply border-border;
