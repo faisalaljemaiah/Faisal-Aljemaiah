@@ -5,7 +5,6 @@ import { ProtectedRoute, RoleRoute } from '@/components/ProtectedRoute'
 import { AppShell } from '@/components/layout/AppShell'
 
 import LoginPage from '@/pages/auth/LoginPage'
-import RegisterPage from '@/pages/auth/RegisterPage'
 import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage'
 import ResetPasswordPage from '@/pages/auth/ResetPasswordPage'
 import DashboardPage from '@/pages/DashboardPage'
@@ -45,7 +44,6 @@ function App() {
     <Suspense fallback={<RouteFallback />}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
 

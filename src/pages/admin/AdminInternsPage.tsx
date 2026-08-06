@@ -171,7 +171,7 @@ export default function AdminInternsPage() {
         description="Interns, preceptors, and administrators on the platform."
         actions={
           <Button onClick={() => setAddOpen(true)}>
-            <Plus className="h-4 w-4" /> Add intern
+            <Plus className="h-4 w-4" /> Invite intern
           </Button>
         }
       />
@@ -286,7 +286,7 @@ export default function AdminInternsPage() {
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add a new user</DialogTitle>
+            <DialogTitle>Invite a new user</DialogTitle>
             <DialogDescription>
               They'll receive an email invite to set their own password and sign in.
             </DialogDescription>

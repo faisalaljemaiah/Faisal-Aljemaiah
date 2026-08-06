@@ -71,10 +71,7 @@ export default function LoginPage() {
       </form>
 
       <p className="text-center text-sm text-muted-foreground">
-        Don&apos;t have an account?{' '}
-        <Link to="/register" className="font-medium text-primary hover:underline">
-          Create one
-        </Link>
+        Don&apos;t have an account? Ask your admin to invite you.
       </p>
     </AuthLayout>
   )
