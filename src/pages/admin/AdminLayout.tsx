@@ -110,7 +110,7 @@ export default function AdminLayout() {
         <p className="mt-1 text-sm text-muted-foreground">Manage interns, schedules, content, and analytics.</p>
       </div>
 
-      <div className="mb-6 grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-9">
+      <div className="mb-6 flex gap-3 overflow-x-auto pb-2 scrollbar-thin sm:grid sm:grid-cols-4 sm:overflow-visible sm:pb-0 md:grid-cols-5 lg:grid-cols-9">
         {sections.map((s) => (
           <NavLink
             key={s.href}
@@ -118,7 +118,7 @@ export default function AdminLayout() {
             end={s.end}
             className={({ isActive }) =>
               cn(
-                'flex aspect-square flex-col items-center justify-center gap-2 rounded-2xl border border-transparent p-2 text-center shadow-sm transition-all duration-200 ease-out-expo hover:-translate-y-0.5 hover:shadow-md active:scale-[0.97]',
+                'flex aspect-square w-24 shrink-0 flex-col items-center justify-center gap-2 rounded-2xl border border-transparent p-2 text-center shadow-sm transition-all duration-200 ease-out-expo hover:-translate-y-0.5 hover:shadow-md active:scale-[0.97] sm:w-auto',
                 isActive ? s.activeTile : s.tile
               )
             }
