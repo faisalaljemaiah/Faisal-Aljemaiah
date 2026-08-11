@@ -60,6 +60,18 @@ export function useUpdateDrug() {
   })
 }
 
+export function useBulkDeleteDrugs() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (opSite?: OpSite) => {
+      const query = supabase.from('drugs').delete()
+      const { error } = opSite ? await query.eq('op_site', opSite) : await query.neq('id', '00000000-0000-0000-0000-000000000000')
+      if (error) throw error
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['drugs'] }),
+  })
+}
+
 export function useDeleteDrug() {
   const queryClient = useQueryClient()
   return useMutation({

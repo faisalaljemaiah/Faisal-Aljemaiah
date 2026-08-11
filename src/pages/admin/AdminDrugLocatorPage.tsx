@@ -25,6 +25,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import {
   useCreateDrug,
   useDeleteDrug,
+  useBulkDeleteDrugs,
   useDrugSearch,
   useUpdateDrug,
   useBulkImportDrugs,
@@ -189,6 +190,7 @@ export default function AdminDrugLocatorPage() {
         description="Manage the medication storage directory."
         actions={
           <div className="flex gap-2">
+            <ClearAllDialog drugs={drugs ?? []} />
             <BulkImportDialog />
             <Button onClick={openNew}>
               <Plus className="h-4 w-4" /> Add medication
@@ -374,6 +376,99 @@ export default function AdminDrugLocatorPage() {
         </DialogContent>
       </Dialog>
     </div>
+  )
+}
+
+type ClearTarget = OpSite | 'all'
+
+function ClearAllDialog({ drugs }: { drugs: Drug[] }) {
+  const bulkDelete = useBulkDeleteDrugs()
+  const [open, setOpen] = React.useState(false)
+  const [target, setTarget] = React.useState<ClearTarget | null>(null)
+
+  const counts: Record<ClearTarget, number> = {
+    OP1: drugs.filter((d) => d.op_site === 'OP1').length,
+    OP2: drugs.filter((d) => d.op_site === 'OP2').length,
+    OP3: drugs.filter((d) => d.op_site === 'OP3').length,
+    all: drugs.length,
+  }
+
+  function close(v: boolean) {
+    setOpen(v)
+    if (!v) setTarget(null)
+  }
+
+  async function handleConfirm() {
+    if (!target) return
+    try {
+      await bulkDelete.mutateAsync(target === 'all' ? undefined : target)
+      toast.success(target === 'all' ? 'All medications deleted' : `All ${target} medications deleted`)
+      close(false)
+    } catch (e) {
+      toast.error('Could not delete medications', { description: (e as Error).message })
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={close}>
+      <DialogTrigger asChild>
+        <Button variant="destructive">
+          <Trash2 className="h-4 w-4" /> Clear all
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        {!target ? (
+          <>
+            <DialogHeader>
+              <DialogTitle>Clear medications</DialogTitle>
+              <DialogDescription>Choose what to delete. This cannot be undone.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2">
+              {OP_SITES.map((site) => (
+                <button
+                  key={site}
+                  onClick={() => setTarget(site)}
+                  disabled={counts[site] === 0}
+                  className="flex w-full items-center justify-between rounded-lg border p-3 text-sm transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <span className="flex items-center gap-2">
+                    <Badge className={OP_SITE_COLORS[site].badge}>{site}</Badge> medications
+                  </span>
+                  <span className="text-muted-foreground">{counts[site]}</span>
+                </button>
+              ))}
+              <button
+                onClick={() => setTarget('all')}
+                disabled={counts.all === 0}
+                className="flex w-full items-center justify-between rounded-lg border border-destructive/40 p-3 text-sm text-destructive transition-colors hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <span>All medications (every site)</span>
+                <span>{counts.all}</span>
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle>Delete {target === 'all' ? 'all' : target} medications?</DialogTitle>
+              <DialogDescription>
+                This permanently deletes {counts[target]} medication{counts[target] === 1 ? '' : 's'}
+                {target !== 'all' ? ` tagged ${target}` : ''} from the directory. This cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setTarget(null)}>
+                Back
+              </Button>
+              <Button variant="destructive" onClick={handleConfirm} disabled={bulkDelete.isPending}>
+                {bulkDelete.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                Delete permanently
+              </Button>
+            </DialogFooter>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
   )
 }
 
