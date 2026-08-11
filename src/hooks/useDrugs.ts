@@ -1,10 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import type { Drug, MedicationCategory } from '@/types/database'
+import type { Drug, MedicationCategory, OpSite } from '@/types/database'
 
-export function useDrugSearch(search: string, category?: MedicationCategory | 'all') {
+export function useDrugSearch(search: string, category?: MedicationCategory | 'all', opSite?: OpSite | 'all') {
   return useQuery({
-    queryKey: ['drugs', search, category],
+    queryKey: ['drugs', search, category, opSite],
     queryFn: async () => {
       let query = supabase.from('drugs').select('*').order('generic_name', { ascending: true })
       const term = search.trim().replace(/[,()%]/g, '')
@@ -13,6 +13,9 @@ export function useDrugSearch(search: string, category?: MedicationCategory | 'a
       }
       if (category && category !== 'all') {
         query = query.eq('category', category)
+      }
+      if (opSite && opSite !== 'all') {
+        query = query.eq('op_site', opSite)
       }
       const { data, error } = await query.limit(200)
       if (error) throw error

@@ -81,6 +81,8 @@ export interface AppNotification {
 /** Free text — pharmacies use their own zone/category naming, so this isn't a fixed enum. */
 export type MedicationCategory = string
 
+export type OpSite = 'OP1' | 'OP2' | 'OP3'
+
 export interface Drug {
   id: string
   generic_name: string
@@ -97,6 +99,7 @@ export interface Drug {
   is_high_alert: boolean
   image_urls: string[]
   notes: string | null
+  op_site: OpSite | null
   created_by: string | null
   created_at: string
   updated_at: string

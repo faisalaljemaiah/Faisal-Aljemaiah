@@ -7,20 +7,34 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useDrugSearch, useDrugCategories } from '@/hooks/useDrugs'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
-import type { MedicationCategory } from '@/types/database'
+import { OP_SITES, OP_SITE_COLORS } from '@/lib/constants'
+import type { MedicationCategory, OpSite } from '@/types/database'
 
 export default function DrugLocatorPage() {
   const [search, setSearch] = React.useState('')
   const [category, setCategory] = React.useState<MedicationCategory | 'all'>('all')
+  const [opSite, setOpSite] = React.useState<OpSite | 'all'>('all')
   const debounced = useDebouncedValue(search, 200)
-  const { data: drugs, isLoading } = useDrugSearch(debounced, category)
+  const { data: drugs, isLoading } = useDrugSearch(debounced, category, opSite)
   const { data: categories } = useDrugCategories()
 
   return (
     <div>
       <PageHeader title="Drug Locator" description="Find where medications are stored — fast." />
+
+      <Tabs value={opSite} onValueChange={(v) => setOpSite(v as OpSite | 'all')} className="mb-4">
+        <TabsList>
+          <TabsTrigger value="all">All pharmacies</TabsTrigger>
+          {OP_SITES.map((site) => (
+            <TabsTrigger key={site} value={site} className={OP_SITE_COLORS[site].tab}>
+              {site}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
 
       <div className="mb-5 flex flex-col gap-3 sm:flex-row">
         <div className="relative max-w-md flex-1">
@@ -79,6 +93,7 @@ export default function DrugLocatorPage() {
                     )}
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1">
+                    {drug.op_site && <Badge className={OP_SITE_COLORS[drug.op_site].badge}>{drug.op_site}</Badge>}
                     {drug.category && <Badge variant="outline">{drug.category}</Badge>}
                     {drug.drug_class && <Badge variant="secondary">{drug.drug_class}</Badge>}
                   </div>

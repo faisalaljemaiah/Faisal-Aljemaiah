@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -33,14 +34,15 @@ import {
   type DrugImportRow,
 } from '@/hooks/useDrugs'
 import { parseSpreadsheetFile, parseBoolean, downloadCsvTemplate, type ParsedRow } from '@/lib/bulkImport'
-import { SUGGESTED_MEDICATION_CATEGORIES } from '@/lib/constants'
-import type { Drug } from '@/types/database'
+import { SUGGESTED_MEDICATION_CATEGORIES, OP_SITES, OP_SITE_COLORS } from '@/lib/constants'
+import type { Drug, OpSite } from '@/types/database'
 
 const emptyForm = {
   generic_name: '',
   brand_names: '',
   drug_class: '',
   category: '',
+  op_site: '' as OpSite | '',
   dosage_form: '',
   strength: '',
   storage_room: '',
@@ -85,6 +87,7 @@ export default function AdminDrugLocatorPage() {
       brand_names: d.brand_names.join(', '),
       drug_class: d.drug_class ?? '',
       category: d.category ?? '',
+      op_site: d.op_site ?? '',
       dosage_form: d.dosage_form ?? '',
       strength: d.strength ?? '',
       storage_room: d.storage_room,
@@ -112,6 +115,7 @@ export default function AdminDrugLocatorPage() {
         .filter(Boolean),
       drug_class: form.drug_class || null,
       category: form.category.trim() || null,
+      op_site: form.op_site || null,
       dosage_form: form.dosage_form || null,
       strength: form.strength || null,
       storage_room: form.storage_room,
@@ -202,6 +206,7 @@ export default function AdminDrugLocatorPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Generic name</TableHead>
+                  <TableHead>Site</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Brands</TableHead>
                   <TableHead>Location</TableHead>
@@ -218,6 +223,9 @@ export default function AdminDrugLocatorPage() {
                         )}
                         {d.generic_name}
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {d.op_site ? <Badge className={OP_SITE_COLORS[d.op_site].badge}>{d.op_site}</Badge> : '—'}
                     </TableCell>
                     <TableCell>{d.category ? <Badge variant="secondary">{d.category}</Badge> : '—'}</TableCell>
                     <TableCell>{d.brand_names.join(', ') || '—'}</TableCell>
@@ -274,6 +282,25 @@ export default function AdminDrugLocatorPage() {
                     <option key={c} value={c} />
                   ))}
                 </datalist>
+              </div>
+              <div className="space-y-2">
+                <Label>Outpatient pharmacy</Label>
+                <Select
+                  value={form.op_site || 'none'}
+                  onValueChange={(v) => setForm({ ...form, op_site: v === 'none' ? '' : (v as OpSite) })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Not set" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Not set</SelectItem>
+                    {OP_SITES.map((site) => (
+                      <SelectItem key={site} value={site}>
+                        {site}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label>Dosage form</Label>
@@ -350,13 +377,19 @@ export default function AdminDrugLocatorPage() {
   )
 }
 
+function parseOpSite(value?: string): OpSite | null {
+  const normalized = value?.trim().toUpperCase()
+  return (OP_SITES as readonly string[]).includes(normalized ?? '') ? (normalized as OpSite) : null
+}
+
 /**
  * Bulk import accepts two header schemas, auto-detected per row:
  *  1. Shelf/zone export: storage_type, zone, column, shelf, position, name, flags, note
  *     (matches real pharmacy shelf-tracking exports)
- *  2. Generic template: generic_name, brand_names, drug_class, category, dosage_form,
- *     strength, storage_room, storage_shelf, storage_bin, is_controlled,
+ *  2. Generic template: generic_name, brand_names, drug_class, category, op_site,
+ *     dosage_form, strength, storage_room, storage_shelf, storage_bin, is_controlled,
  *     is_refrigerated, is_high_alert, notes
+ * Either schema may also include an `op_site` column (OP1/OP2/OP3).
  */
 function mapImportRow(row: ParsedRow): DrugImportRow | null {
   if (row.name && row.zone) {
@@ -368,6 +401,7 @@ function mapImportRow(row: ParsedRow): DrugImportRow | null {
       brand_names: [],
       drug_class: null,
       category: row.zone.trim() || null,
+      op_site: parseOpSite(row.op_site),
       dosage_form: null,
       strength: null,
       storage_room: row.zone.trim(),
@@ -389,6 +423,7 @@ function mapImportRow(row: ParsedRow): DrugImportRow | null {
       .filter(Boolean),
     drug_class: row.drug_class?.trim() || null,
     category: row.category?.trim() || null,
+    op_site: parseOpSite(row.op_site),
     dosage_form: row.dosage_form?.trim() || null,
     strength: row.strength?.trim() || null,
     storage_room: row.storage_room.trim(),
@@ -482,6 +517,7 @@ function BulkImportDialog() {
                   'brand_names',
                   'drug_class',
                   'category',
+                  'op_site',
                   'dosage_form',
                   'strength',
                   'storage_room',
@@ -498,6 +534,7 @@ function BulkImportDialog() {
                   'Prinivil, Zestril',
                   'ACE Inhibitor',
                   'Cardiology',
+                  'OP1',
                   'tablet',
                   '10mg',
                   'Pharmacy A',
@@ -530,6 +567,7 @@ function BulkImportDialog() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Generic name</TableHead>
+                      <TableHead>Site</TableHead>
                       <TableHead>Category</TableHead>
                       <TableHead>Location</TableHead>
                     </TableRow>
@@ -538,6 +576,7 @@ function BulkImportDialog() {
                     {rows.slice(0, 20).map((r, i) => (
                       <TableRow key={i}>
                         <TableCell>{r.generic_name}</TableCell>
+                        <TableCell>{r.op_site ?? '—'}</TableCell>
                         <TableCell>{r.category ?? '—'}</TableCell>
                         <TableCell>
                           {r.storage_room}
