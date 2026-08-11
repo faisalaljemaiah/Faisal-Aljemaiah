@@ -443,6 +443,14 @@ function BulkImportDialog() {
   const [rows, setRows] = React.useState<DrugImportRow[] | null>(null)
   const [fileName, setFileName] = React.useState('')
   const [parseError, setParseError] = React.useState<string | null>(null)
+  const [bulkOpSite, setBulkOpSite] = React.useState<OpSite | ''>('')
+
+  function resetSelection() {
+    setRows(null)
+    setFileName('')
+    setParseError(null)
+    setBulkOpSite('')
+  }
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -469,12 +477,12 @@ function BulkImportDialog() {
 
   async function handleImport() {
     if (!profile || !rows) return
+    const finalRows = bulkOpSite ? rows.map((r) => ({ ...r, op_site: bulkOpSite })) : rows
     try {
-      const count = await bulkImport.mutateAsync({ rows, created_by: profile.id })
+      const count = await bulkImport.mutateAsync({ rows: finalRows, created_by: profile.id })
       toast.success(`Imported ${count} medications`)
       setOpen(false)
-      setRows(null)
-      setFileName('')
+      resetSelection()
     } catch (err) {
       toast.error('Import failed', { description: (err as Error).message })
     }
@@ -485,11 +493,7 @@ function BulkImportDialog() {
       open={open}
       onOpenChange={(v) => {
         setOpen(v)
-        if (!v) {
-          setRows(null)
-          setFileName('')
-          setParseError(null)
-        }
+        if (!v) resetSelection()
       }}
     >
       <DialogTrigger asChild>
@@ -551,11 +555,35 @@ function BulkImportDialog() {
             <Download className="h-3.5 w-3.5" /> Download CSV template
           </Button>
 
-          <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed p-8 text-center hover:bg-accent">
-            <Upload className="h-6 w-6 text-muted-foreground" />
-            <span className="text-sm font-medium">{fileName || 'Click to choose a .csv or .xlsx file'}</span>
-            <input type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleFile} />
-          </label>
+          <div className="space-y-2">
+            <Label>Outpatient pharmacy for this whole file (optional)</Label>
+            <Select value={bulkOpSite || 'none'} onValueChange={(v) => setBulkOpSite(v === 'none' ? '' : (v as OpSite))}>
+              <SelectTrigger className="sm:w-64">
+                <SelectValue placeholder="Use each row's own op_site column" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Use each row's own op_site column</SelectItem>
+                {OP_SITES.map((site) => (
+                  <SelectItem key={site} value={site}>
+                    {site} — tag every row in this file
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <label className="flex flex-1 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed p-8 text-center hover:bg-accent">
+              <Upload className="h-6 w-6 text-muted-foreground" />
+              <span className="text-sm font-medium">{fileName || 'Click to choose a .csv or .xlsx file'}</span>
+              <input type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleFile} />
+            </label>
+            {(fileName || rows) && (
+              <Button variant="destructive" onClick={resetSelection}>
+                <Trash2 className="h-4 w-4" /> Clear all
+              </Button>
+            )}
+          </div>
 
           {parseError && <p className="text-sm text-destructive">{parseError}</p>}
 
@@ -576,7 +604,7 @@ function BulkImportDialog() {
                     {rows.slice(0, 20).map((r, i) => (
                       <TableRow key={i}>
                         <TableCell>{r.generic_name}</TableCell>
-                        <TableCell>{r.op_site ?? '—'}</TableCell>
+                        <TableCell>{bulkOpSite || r.op_site || '—'}</TableCell>
                         <TableCell>{r.category ?? '—'}</TableCell>
                         <TableCell>
                           {r.storage_room}
